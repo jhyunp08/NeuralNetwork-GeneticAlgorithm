@@ -1,0 +1,61 @@
+display link: https://neural-network-vvdll.run.goorm.io
+************************************************************************************
+
+
+***entire rule:
+
+
+
+
+Gene Encoding/Interpreting Rule:
+    * hexadecimal str
+    * composed of #{Brain_size} connections
+    
+    * Connection:
+        * one connection -> 6bit hexdeciaml str
+        
+        gene form: | type | source | sink | weight |
+        connection form: (source, sink, weight)
+        
+        - |type|: type of connection, 1bit
+            0 = input->output, 1 = input->inner, 2 = inner->output, 3 = none (mod 4)
+            -> = location index of the connection in Network.connections
+            
+        - |source|: id of source neuron of the connection, 1bit
+            for input/inner, index of the neuron at {InputNeurons}/{InnerNeurons}
+            -> {source} = index of source in Network.Input/Output/InnerNeurons
+            
+        - |sink|: id of sink neuron of the connection, 1bit
+            for inner/output, index of the neuron at {InnerNeurons}/{OutputNeurons}
+            -> {sink} = index of sink in Network.Input/Output/InnerNeurons
+            
+        - |weight|: weight of the connection, 3bit
+            -> {weight} = 15 x (weight-127.5)/127.5 (in range[-15, 15))
+            
+
+
+Input & Output||
+
+   *** Input: which information is given 
+   *** Output: how does the entity move 
+   
+     Input:
+     
+             |0,1|
+             |n,n_distance| => input distance to north wall, distance nearest entity north
+             |s,s_distance| => input distance to south wall, distance nearest entity south
+             |e,e_distance| => input distance to east wall, distance nearest entity east
+             |w,w_distance| => input distance to west wall, distance nearest entity west
+             |forward,forward_distance|  => input forward (nsew), distance to nearest entity forward
+             |elapsed_time| => input how many time has passed
+             |oscillator|]
+     
+     Output:
+        
+        |null|
+        |move_to_north| => move entity north
+        |move_to_south| => move entity south
+        |move_to_east| => move entity east
+        |move_to_west| => move entity west
+        |move_to_forward| => move entity forward
+        |rotate| => change direction of entity
