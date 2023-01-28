@@ -1,0 +1,6 @@
+# Default ignored files
+/.idea/
+/.vscode/
+/Pi/
+/venv/
+/etc/
