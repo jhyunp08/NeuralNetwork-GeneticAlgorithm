@@ -1,3 +1,4 @@
+# main algorithm
 import random as rand
 import numpy as np
 from functools import cache, lru_cache
@@ -266,9 +267,6 @@ class Entity:
         else:
             pass
 
-    def population(population):
-        pass
-
     def run(self):
         if self.alive:
             self.network.run()
@@ -276,9 +274,5 @@ class Entity:
 
 
 if __name__ == "__main__":
-    net = Network(None, N_inner, '01a9380294821029b82b394813579b')
-    for i in range(10):
-        mm = net.mutateGene()
-        print(mm)
-    net.makeGraph()
+    pass
     # 테스트할 거 있으면

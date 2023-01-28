@@ -1,3 +1,4 @@
+# test file; tkinter GUI
 import random as rand
 import numpy as np
 from functools import cache, lru_cache
@@ -96,17 +97,22 @@ def set_default_font():
     def_font.config(family="Helvetica", size=15)
 
 
+CANVAS_DIM = 720
+CANVAS_PAD = 30
+SETWIN_WIDTH = 500
+
+
 class App(Tk):
     def __init__(self, master=None):
         # initialize window
         Tk.__init__(self)
         self.wm_title("hello world?")
-        self.geometry("1400x900")
+        self.geometry(f"{CANVAS_DIM + 2*CANVAS_PAD + SETWIN_WIDTH}x{CANVAS_DIM + 2*CANVAS_PAD}")
         self.menu = Menu(self)
         self.config(menu=self.menu)
         self.createMenu()
 
-        self.style = [{"bg": "gray6", "fg": "white"},
+        self.style = [{"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white"},
                       {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white", 
                       "pbut_bg": "gray", "rbut_bg": "gray17"}]
         self.fonts = {"gen": tkFont.Font(family='times', size=18)}
@@ -128,18 +134,21 @@ class App(Tk):
 
 class SimWindow(Frame):
     def __init__(self, master):
-        Frame.__init__(self, master, width=900, height=900)
+        Frame.__init__(self, master, width=CANVAS_DIM + 2*CANVAS_PAD, height=CANVAS_DIM + 2*CANVAS_PAD)
         self.master = master
         self.pack(side=LEFT, fill=BOTH, expand=1)
         self.style_dict = self.master.style[0]
         self.config(bg=self.style_dict["bg"])
 
-        self.canvas = Canvas(self, width=self.cget("width"), height=self.cget("height"),
-                             bg=self.cget("bg"), highlightthickness=0)
-        self.canvas.pack(fill=BOTH, expand=1)
+        self.canvas = Canvas(self, width=self.cget("width") - 2*CANVAS_PAD, height=self.cget("height") - 2*CANVAS_PAD,
+                             bg=self.style_dict["canvas_bg"], highlightthickness=0)
+        self.canvas.place(x=CANVAS_PAD, y=CANVAS_PAD)
+
+        self.genCount = Label(self, text="Gen: 0", font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"])
+        self.genCount.pack(side=TOP)
+
         self.draw()
         self.bind('<Button-1>', self.f)
-        self.canvas.bind("<1>", self.f)
     
     def draw(self):
         for e in entities:
@@ -160,15 +169,12 @@ class SimWindow(Frame):
 
 class SettingWindow(Frame):
     def __init__(self, master):
-        Frame.__init__(self, master, width=500)
+        Frame.__init__(self, master, width=SETWIN_WIDTH)
         self.master = master
         self.pack(side=RIGHT, fill=Y, expand=0)
         self.style_dict = self.master.style[1]
         self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
                     highlightthickness=self.style_dict["highlightthickness"])
-        
-        self.genCount = Label(self, text="Gen:", font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"])
-        self.genCount.place(x=10, y=10)
 
         self.playpauseButton = Button(self,
                                   text="Play",

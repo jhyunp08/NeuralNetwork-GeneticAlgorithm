@@ -10,5 +10,6 @@ todo list:
 6. timescale + (other params)
 7. assign rgb from gene
 8. gene dist_graph
-9. UI
+9. cleanup imports
+10. UI
 +....

@@ -1,10 +1,4 @@
-display link: https://neural-network-vvdll.run.goorm.io
 ************************************************************************************
-
-
-***entire rule:
-
-
 
 
 Gene Encoding/Interpreting Rule:
@@ -34,7 +28,7 @@ Gene Encoding/Interpreting Rule:
             
 
 
-Input & Output||
+Input & Output:
 
    *** Input: which information is given 
    *** Output: how does the entity move 
@@ -48,7 +42,7 @@ Input & Output||
              |w,w_distance| => input distance to west wall, distance nearest entity west
              |forward,forward_distance|  => input forward (nsew), distance to nearest entity forward
              |elapsed_time| => input how many time has passed
-             |oscillator|]
+             |oscillator| => ...
      
      Output:
         
