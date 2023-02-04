@@ -25,19 +25,19 @@ def llun(x):
 
 
 def move_to_north(neuron):
-    neuron.master.y -= neuron.value * k_velocity
+    neuron.master.entity.y -= neuron.value * k_velocity
 
 
 def move_to_south(neuron):
-    neuron.master.y += neuron.value * k_velocity
+    neuron.master.entity.y += neuron.value * k_velocity
 
 
 def move_to_east(neuron):
-    neuron.master.y += neuron.value * k_velocity
+    neuron.master.entity.y += neuron.value * k_velocity
 
 
 def move_to_west(neuron):
-    neuron.master.y -= neuron.value * k_velocity
+    neuron.master.entity.y -= neuron.value * k_velocity
 
 
 def population(population):
@@ -107,8 +107,9 @@ OutputNeurons = [OutputNeuron(None, (2,0), 0.0, null, "null"),
                 OutputNeuron(None, (2,3), 0.0, null, "move_e"), 
                 OutputNeuron(None, (2,4), 0.0, null, "move_w"), 
                 OutputNeuron(None, (2,5), 0.0, null, "move_forward"), 
-                OutputNeuron(None, (2,6), 0.0, null, "rotate"), 
-                '''OutputNeuron(None, (2,7), 0.0, null), 
+                OutputNeuron(None, (2,6), 0.0, null, "rotate")
+                ]
+'''OutputNeuron(None, (2,7), 0.0, null), 
                 OutputNeuron(None, (2,8), 0.0, null), 
                 OutputNeuron(None, (2,9), 0.0, null), 
                 OutputNeuron(None, (2,10), 0.0, null), 
@@ -117,28 +118,28 @@ OutputNeurons = [OutputNeuron(None, (2,0), 0.0, null, "null"),
                 OutputNeuron(None, (2,13), 0.0, null), 
                 OutputNeuron(None, (2,14), 0.0, null), 
                 OutputNeuron(None, (2,15), 0.0, null)'''
-                ]  # 미리 지정한 OutputNeuron 들의 list
+                #] # 미리 지정한 OutputNeuron 들의 list
 
 n_InputN = len(InputNeurons)
 n_OutputN = len(OutputNeurons)
-N_inner = 2  # 은닉층 뉴런 개수
-Brain_size = 5  # 최대 connection 개수
-P_mutation = 0.04  # 변이 확률
-max_weight = 10.0
+N_INNER = 2  # 은닉층 뉴런 개수
+BRAIN_SIZE = 5  # 최대 connection 개수
+P_MUTATION = 0.04  # 변이 확률
+MAX_WEIGHT = 10.0
 
 
 def interp_gene(network):  # set up the network using the gene
     l_c = [[], [], []]
     d_ip = {}
     d_op = {}
-    for n in range(0, Brain_size):
+    for n in range(0, BRAIN_SIZE):
         g = network.gene[6 * n: 6 * n + 6]
         g_t = int(g[0], 16) % 4
         if g_t == 3:
             continue
         g_so = int(g[1], 16)
         g_si = int(g[2], 16)
-        g_w = max_weight * (float(int(g[3:-1], 16)) - 127.5) / 127.5
+        g_w = MAX_WEIGHT * (float(int(g[3:-1], 16)) - 127.5) / 127.5
         if g_t == 0:
             g_so = g_so % n_InputN
             g_si = g_si % n_OutputN
@@ -147,18 +148,18 @@ def interp_gene(network):  # set up the network using the gene
             l_c[0].append((g_so, g_si, g_w))
         elif g_t == 1:
             g_so = g_so % n_InputN
-            g_si = g_si % N_inner
+            g_si = g_si % N_INNER
             d_ip[g_so] = 0
             l_c[1].append((g_so, g_si, g_w))
         else:
-            g_so = g_so % N_inner
+            g_so = g_so % N_INNER
             g_si = g_si % n_OutputN
             d_op[g_si] = 0
             l_c[2].append((g_so, g_si, g_w))
     for ip in d_ip:
-        network.input_neurons.append(InputNeurons[ip].copy(network.master))
+        network.input_neurons.append(InputNeurons[ip].copy(network))
     for op in d_op:
-        network.output_neurons.append(OutputNeurons[op].copy(network.master))
+        network.output_neurons.append(OutputNeurons[op].copy(network))
     for conn in l_c[0]:
         for conn in l_c[0]:
             network.connections[0].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
@@ -171,18 +172,14 @@ def interp_gene(network):  # set up the network using the gene
 
 
 class Network:
-    def __init__(self, master, n_inner: int, gene: str):
-        self.master = master
-        try:
-            self.master.network = self
-        except AttributeError:
-            print("No Master")
+    def __init__(self, entity, n_inner: int, gene: str):
+        self.entity = entity
         self.gene = gene
         self.input_neurons = []
         self.output_neurons = []
         self.inner_neurons = []
         for i in range(n_inner):
-            self.inner_neurons.append(Neuron(self.master, (1, i), 0.0, f"innner{i}"))
+            self.inner_neurons.append(Neuron(self, (1, i), 0.0, f"innner{i}"))
         self.connections = [[], [],
                             []]  # connections[0]: input->output, connections[1]: input->inner, connections[2]: inner->output
         # connection = (source, sink, weight)
@@ -233,23 +230,31 @@ class Network:
     def printGene(self):
         print(self.gene)
 
-    def mutateGene(self):
-        new_gene = ''
-        for char in self.gene:  # apply mutation with prob. P_mutation for every bit in gene
-            if rand.random() <= P_mutation:
-                new_gene += format(rand.randint(0, 15), 'x')
-            else:
-                new_gene += char
-        return new_gene
+
+def mutateGene(gene):
+    new_gene = ''
+    for char in gene:  # apply mutation with prob. P_MUTATION for every bit in gene
+        if rand.random() <= P_MUTATION:
+             new_gene += format(rand.randint(0, 15), 'x')
+        else:
+             new_gene += char
+    return new_gene
+
+def randGene():
+    # generate random gene
+    new_gene = ''
+    for i in range(6*BRAIN_SIZE):
+        new_gene += format(rand.randint(0, 15), 'x')
+    return new_gene
 
 
 class Entity:
-    def __init__(self, x, y, point, status, alive_point):
+    def __init__(self, x, y):
         self.network = None
         self.x = x
         self.y = y
         self.alive = True
-        self.point = point
+        self.point = 0
 
     def reset(self):  # reset Entity for new round
         self.network = None
@@ -274,5 +279,11 @@ class Entity:
 
 
 if __name__ == "__main__":
-    pass
+    net = Network(None, N_INNER, '01a000029fff1029b82b394813579b')
+    net2 = Network(None, N_INNER, '011fff300000300000300000300000')
+    for inp in net.input_neurons:
+        inp.value = rand.random()
+    net.run()
+    net.makeGraph()
+    print('done')
     # 테스트할 거 있으면

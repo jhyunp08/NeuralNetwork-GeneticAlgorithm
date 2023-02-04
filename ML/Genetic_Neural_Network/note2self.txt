@@ -2,8 +2,9 @@
 ____________________________________________________
 todo list:
 
-1. output,inputf
-2. gen cycle
+0. async gencycle!
+1. gen cycle
+2. output,inputf
 3. play/pause/reset
 4. population graph
 5. network graph (networkx)

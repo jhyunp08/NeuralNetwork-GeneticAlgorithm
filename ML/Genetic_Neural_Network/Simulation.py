@@ -1,58 +1,5 @@
-# test file; tkinter GUI
-import random as rand
-import numpy as np
-from functools import cache, lru_cache
-import asyncio  # managing coroutines
-import networkx as nx  # generating graphs
-import matplotlib.pyplot as plt  # visualizing graphs
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
-import PIL  # image processing
+# 몰라
 from classes import *
-
-k_velocity = 0.1
-
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-
-def null(x):
-    return 0.0
-
-
-def llun(x):
-    return 1.0
-
-entities = []
-
-class Entity:
-    def __init__(self, x, y) -> None:
-        self.id = len(entities)
-
-        self.x = x
-        self.y = y
-        self.obj = None
-    
-    def __eq__(self, __o: object) -> bool:
-        try:
-            return (self.id == __o.id)
-        except AttributeError:
-            print(f'Attribute Error: {__o} is not of class Entity')
-        finally:
-            return False
-    
-    def dist(self, e) -> float:
-        return np.sqrt((self.x - e.x) ** 2 + (self.y - e.y) ** 2)
-
-    def mutate(self):
-        pass
-
-def setUp():
-    for i in range(30):
-        for j in range(30):
-            entities.append(Entity(5.0+(i)*20.0, 5.0+(j)*20.0))
-
-
 import platform
 from tkinter import *
 from tkinter import font as tkFont
@@ -78,13 +25,29 @@ def set_default_font():
     def_font.config(family="Helvetica", size=15)
 
 
+def tksleep(self, time:float) -> None:
+    # Emulating 'time.sleep(milliseconds)'
+    self.after(int(time), self.quit)
+    self.mainloop()
+Misc.tksleep = tksleep
+
+
 CANVAS_DIM = 720
 CANVAS_PAD = 30
 SETWIN_WIDTH = 500
+PLOTWIN_HEIGHT = 500
+FRAMES_PER_GEN = 10
+INITIAL_GEN_POP = 900
+INITIAL_POS = []
+for i in range(30):
+        for j in range(30):
+            INITIAL_POS.append((5.0+i*20.0, 5.0+j*20.0))
+
+entities = []
 
 
-class App(Tk):
-    def __init__(self, master=None):
+class Root(Tk):
+    def __init__(self):
         # initialize window
         Tk.__init__(self)
         self.wm_title("hello world?")
@@ -95,11 +58,13 @@ class App(Tk):
 
         self.style = [{"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white"},
                       {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white", 
-                      "pbut_bg": "gray", "rbut_bg": "gray17"}]
+                      "pbut_bg": "gray", "rbut_bg": "gray17"},
+                      {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white"}]
         self.fonts = {"gen": tkFont.Font(family='times', size=18)}
 
         self.sim_win = SimWindow(self)
         self.set_win = SettingWindow(self)
+        self.plot_win = PlotWindow(self)
     
     def createMenu(self):
         fileMenu = Menu(self.menu)
@@ -125,22 +90,72 @@ class SimWindow(Frame):
                              bg=self.style_dict["canvas_bg"], highlightthickness=0)
         self.canvas.place(x=CANVAS_PAD, y=CANVAS_PAD)
 
-        self.genCount = Label(self, text="Gen: 0", font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"])
+        self.gen = 0
+        self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"])
         self.genCount.pack(side=TOP)
 
-        self.update_()
+        self.setUp()
+        self.newGen()
+        self.newGen()
     
-    def update_(self):
+    def setUp(self):
+        for i in range(INITIAL_GEN_POP):
+            e = Entity(0, 0)
+            e.network = Network(e, N_INNER, randGene())
+            entities.append(e)
         for e in entities:
             e.obj = self.canvas.create_oval(e.x-1, e.y-1, e.x+1, e.y+1, fill=self.style_dict["fg"], tags="entity")
+
+    def update_(self):
+        for e in entities:
+            self.canvas.moveto(e.obj, e.x-1, e.y-1)
         self.update()
+
+    def place_entities(self):
+        rand.shuffle(entities)
+        for i in range(len(entities)):
+            e = entities[i]
+            e.x, e.y = INITIAL_POS[i]
+        self.update_()
+
+    def run(self):
+        for e in entities:
+            e.run()
+        self.update_()
+
+    def newGen(self):
+        self.genCount.config(text=f"Gen: {self.gen}")
+        if self.gen > 0:
+            alive_genes = []
+            new_genes = []
+            for e in entities:
+                if e.alive:
+                    alive_genes.append(e.network.gene)
+                e.reset()
+            if alive_genes:
+                rand.shuffle(alive_genes)
+                i = 0
+                while i < INITIAL_GEN_POP:
+                    new_genes.append(mutateGene(alive_genes[i % len(alive_genes)]))
+                    i += 1
+                for i in range(INITIAL_GEN_POP):
+                    e = entities[i]
+                    e.network = Network(e, N_INNER, new_genes[i])
+            else:
+                print("Simulation Terminated; No Entities Alive")
+                return
+        self.place_entities()
+        for i in range(FRAMES_PER_GEN):
+            self.tksleep(100)
+            self.run()
+        self.gen += 1
 
 
 class SettingWindow(Frame):
     def __init__(self, master):
-        Frame.__init__(self, master, width=SETWIN_WIDTH)
+        Frame.__init__(self, master, width=SETWIN_WIDTH, height=CANVAS_DIM+2*CANVAS_PAD-PLOTWIN_HEIGHT)
         self.master = master
-        self.pack(side=RIGHT, fill=Y, expand=0)
+        self.pack(side=TOP, expand=1)
         self.style_dict = self.master.style[1]
         self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
                     highlightthickness=self.style_dict["highlightthickness"])
@@ -167,6 +182,14 @@ class SettingWindow(Frame):
                                   )
         self.resetButton.place(x=120, y=50)
 
+class PlotWindow(Frame):
+    def __init__(self, master):
+        Frame.__init__(self, master, width=SETWIN_WIDTH, height=PLOTWIN_HEIGHT)
+        self.master = master
+        self.pack(side=RIGHT, expand=0)
+        self.style_dict = self.master.style[2]
+        self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
+                    highlightthickness=self.style_dict["highlightthickness"])
 
         self.figure_pop = Figure(figsize=(4, 2), dpi=100)
 
@@ -178,7 +201,7 @@ class SettingWindow(Frame):
 
         self.graph_pop = FigureCanvasTkAgg(self.figure_pop, master = self)
         self.graph_pop.draw()
-        self.graph_pop.get_tk_widget().place(x=10, y=200)
+        self.graph_pop.get_tk_widget().place(x=10, y=10)
 
 
         self.figure_gene = Figure(figsize=(4, 2), dpi=100)
@@ -191,11 +214,11 @@ class SettingWindow(Frame):
 
         self.graph_gene = FigureCanvasTkAgg(self.figure_gene, master = self)
         self.graph_gene.draw()
-        self.graph_gene.get_tk_widget().place(x=10, y=450)
+        self.graph_gene.get_tk_widget().place(x=10, y=250)
+
 
 
 if __name__ == "__main__":
-    setUp()
-    app = App()
+    root = Root()
     set_default_font()
-    app.mainloop()
+    root.mainloop()
