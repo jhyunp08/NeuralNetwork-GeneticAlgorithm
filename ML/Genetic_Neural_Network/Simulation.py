@@ -1,14 +1,14 @@
-# 몰라
+# code for the simulation
 from classes import *
 import platform
 from tkinter import *
 from tkinter import font as tkFont
 
+# using tkmacosx as the current version of tkinter doesn't support displaying button widget with background color in macosx
 if platform.system() == "Darwin":
     from tkmacosx import Button
 else:
     from tkinter import Button as tkButton
-
 
     class Button(tkButton):
         def __init__(self, master=None, cnf={}, **kw):
@@ -24,7 +24,7 @@ def set_default_font():
     def_font = tkFont.nametofont("TkDefaultFont")
     def_font.config(family="Helvetica", size=15)
 
-
+# fix this!
 def tksleep(self, time:float) -> None:
     # Emulating 'time.sleep(milliseconds)'
     self.after(int(time), self.quit)
@@ -38,12 +38,12 @@ SETWIN_WIDTH = 500
 PLOTWIN_HEIGHT = 500
 FRAMES_PER_GEN = 10
 INITIAL_GEN_POP = 900
-INITIAL_POS = []
+INITIAL_POS = []  # the initial positions at the start of each gen
 for i in range(30):
         for j in range(30):
             INITIAL_POS.append((5.0+i*20.0, 5.0+j*20.0))
 
-entities = []
+entities = []  # all entities will be stored and accessed through this array
 
 
 class Root(Tk):
@@ -99,6 +99,7 @@ class SimWindow(Frame):
         self.newGen()
     
     def setUp(self):
+        # initilaize all entities and assign canvas object oval
         for i in range(INITIAL_GEN_POP):
             e = Entity(0, 0)
             e.network = Network(e, N_INNER, randGene())
@@ -113,14 +114,13 @@ class SimWindow(Frame):
 
     def place_entities(self):
         rand.shuffle(entities)
-        for i in range(len(entities)):
-            e = entities[i]
+        for i, e in enumerate(entities):
             e.x, e.y = INITIAL_POS[i]
         self.update_()
 
     def run(self):
         for e in entities:
-            e.run()
+            e.run() ###
         self.update_()
 
     def newGen(self):

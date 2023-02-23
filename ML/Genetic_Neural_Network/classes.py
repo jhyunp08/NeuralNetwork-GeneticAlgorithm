@@ -128,7 +128,8 @@ P_MUTATION = 0.04  # 변이 확률
 MAX_WEIGHT = 10.0
 
 
-def interp_gene(network):  # set up the network using the gene
+def interp_gene(network): 
+    # set up the network using the gene
     l_c = [[], [], []]
     d_ip = {}
     d_op = {}
@@ -232,8 +233,9 @@ class Network:
 
 
 def mutateGene(gene):
+    # apply mutation with prob. P_MUTATION for every bit in gene
     new_gene = ''
-    for char in gene:  # apply mutation with prob. P_MUTATION for every bit in gene
+    for char in gene:
         if rand.random() <= P_MUTATION:
              new_gene += format(rand.randint(0, 15), 'x')
         else:
@@ -256,7 +258,8 @@ class Entity:
         self.alive = True
         self.point = 0
 
-    def reset(self):  # reset Entity for new round
+    def reset(self):  
+        # reset Entity for new round
         self.network = None
         self.x = 0
         self.y = 0
@@ -264,7 +267,8 @@ class Entity:
         self.point = 0
 
     def status_check(self):
-        if self.alive:  # check if Entity is alive
+        # check if Entity is alive
+        if self.alive:
             if self.point >= 0:
                 self.alive = True
             else:
