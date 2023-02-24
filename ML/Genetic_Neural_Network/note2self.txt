@@ -2,11 +2,10 @@
 ____________________________________________________
 todo list:
 
-0. async gencycle!
-1. gen cycle
-2. output,inputf
-3. play/pause/reset
-4. population graph
+1. output,inputf
+2. play/pause/reset
+3. population graph
+4. entity.alive
 5. network graph (networkx)
 6. timescale + (other params)
 7. assign rgb from gene

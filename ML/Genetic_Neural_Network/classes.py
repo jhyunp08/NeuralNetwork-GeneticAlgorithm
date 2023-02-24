@@ -17,27 +17,31 @@ def sigmoid(x):
 
 
 def null(x):
-    return 0.0
+    return 1.0
 
 
 def llun(x):
     return 1.0
 
 
-def move_to_north(neuron):
-    neuron.master.entity.y -= neuron.value * k_velocity
+def move_n(neuron):
+    if neuron.value >= 0.5:
+        neuron.master.entity.y -= neuron.value * k_velocity
 
 
-def move_to_south(neuron):
-    neuron.master.entity.y += neuron.value * k_velocity
+def move_s(neuron):
+    if neuron.value >= 0.5:
+        neuron.master.entity.y += neuron.value * k_velocity
 
 
-def move_to_east(neuron):
-    neuron.master.entity.y += neuron.value * k_velocity
+def move_e(neuron):
+    if neuron.value >= 0.5:
+        neuron.master.entity.y += neuron.value * k_velocity
 
 
-def move_to_west(neuron):
-    neuron.master.entity.y -= neuron.value * k_velocity
+def move_w(neuron):
+    if neuron.value >= 0.5:
+        neuron.master.entity.y -= neuron.value * k_velocity
 
 
 def population(population):
@@ -102,10 +106,10 @@ InputNeurons = [InputNeuron(None, (0,0), 0.0, null, "0"),
                 InputNeuron(None, (0,15), 0.0, null, "oscillator")
                 ]  # 미리 지정한 InputNeuron 들의 list
 OutputNeurons = [OutputNeuron(None, (2,0), 0.0, null, "null"), 
-                OutputNeuron(None, (2,1), 0.0, null, "move_n"), 
-                OutputNeuron(None, (2,2), 0.0, null, "move_s"), 
-                OutputNeuron(None, (2,3), 0.0, null, "move_e"), 
-                OutputNeuron(None, (2,4), 0.0, null, "move_w"), 
+                OutputNeuron(None, (2,1), 0.0, move_n, "move_n"), 
+                OutputNeuron(None, (2,2), 0.0, move_s, "move_s"), 
+                OutputNeuron(None, (2,3), 0.0, move_e, "move_e"), 
+                OutputNeuron(None, (2,4), 0.0, move_w, "move_w"), 
                 OutputNeuron(None, (2,5), 0.0, null, "move_forward"), 
                 OutputNeuron(None, (2,6), 0.0, null, "rotate")
                 ]

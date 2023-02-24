@@ -24,19 +24,13 @@ def set_default_font():
     def_font = tkFont.nametofont("TkDefaultFont")
     def_font.config(family="Helvetica", size=15)
 
-# fix this!
-def tksleep(self, time:float) -> None:
-    # Emulating 'time.sleep(milliseconds)'
-    self.after(int(time), self.quit)
-    self.mainloop()
-Misc.tksleep = tksleep
-
 
 CANVAS_DIM = 720
 CANVAS_PAD = 30
 SETWIN_WIDTH = 500
 PLOTWIN_HEIGHT = 500
 FRAMES_PER_GEN = 10
+MS_PER_FRAME = 100
 INITIAL_GEN_POP = 900
 INITIAL_POS = []  # the initial positions at the start of each gen
 for i in range(30):
@@ -91,12 +85,12 @@ class SimWindow(Frame):
         self.canvas.place(x=CANVAS_PAD, y=CANVAS_PAD)
 
         self.gen = 0
-        self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"])
+        self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"], text="")
         self.genCount.pack(side=TOP)
+        self.running = True
 
         self.setUp()
-        self.newGen()
-        self.newGen()
+        self.after(1, self.newGen)
     
     def setUp(self):
         # initilaize all entities and assign canvas object oval
@@ -123,7 +117,21 @@ class SimWindow(Frame):
             e.run() ###
         self.update_()
 
+    def loop_frames(self, count):
+        if not self.running:
+            return
+        if count <= 0:
+            self.gen += 1
+            self.newGen()
+            self.update_()
+            return
+        self.run()
+        self.after(MS_PER_FRAME, self.loop_frames, count - 1)
+        print(count)
+
     def newGen(self):
+        if not self.running:
+            return
         self.genCount.config(text=f"Gen: {self.gen}")
         if self.gen > 0:
             alive_genes = []
@@ -145,10 +153,7 @@ class SimWindow(Frame):
                 print("Simulation Terminated; No Entities Alive")
                 return
         self.place_entities()
-        for i in range(FRAMES_PER_GEN):
-            self.tksleep(100)
-            self.run()
-        self.gen += 1
+        self.loop_frames(FRAMES_PER_GEN)
 
 
 class SettingWindow(Frame):
@@ -202,7 +207,6 @@ class PlotWindow(Frame):
         self.graph_pop = FigureCanvasTkAgg(self.figure_pop, master = self)
         self.graph_pop.draw()
         self.graph_pop.get_tk_widget().place(x=10, y=10)
-
 
         self.figure_gene = Figure(figsize=(4, 2), dpi=100)
 
