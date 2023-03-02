@@ -41,6 +41,20 @@ def dijkstra(graph, start):
     return distances
 
 def minimize_color_difference(colors, color_difference=delta_e_cie2000):
+    dict_delta_es = {"deltaecie1976": delta_e_cie1976, 
+                     "1976": delta_e_cie1976, 
+                     "cie1976": delta_e_cie1976, 
+                     "deltaecie1994": delta_e_cie1994, 
+                     "1994": delta_e_cie1994,
+                     "cie1994": delta_e_cie1994, 
+                     "deltaecie2000": delta_e_cie2000, 
+                     "2000": delta_e_cie2000, 
+                     "cie2000": delta_e_cie2000, 
+                     "deltaecmc": delta_e_cmc, 
+                     "cmc": delta_e_cmc
+                     }
+    if isinstance(color_difference, str):
+        color_difference = dict_delta_es[color_difference.lower().replace(' ','').replace('_','')]
     colors_cielab = [convert_color(sRGBColor(*color), LabColor) for color in colors]
     graph = build_color_graph(colors_cielab, color_difference)
     start = 0
@@ -60,7 +74,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import random
 
-    N = 40
+    N = 100
     colors = [(random.random(), random.random(), random.random()) for i in range(N)]
 
     minimized_colors1 = minimize_color_difference(colors, delta_e_cie1976)

@@ -1,5 +1,6 @@
 # code for the simulation
 from classes import *
+from hyperparams import *
 import platform
 from tkinter import *
 from tkinter import font as tkFont
@@ -23,21 +24,6 @@ else:
 def set_default_font():
     def_font = tkFont.nametofont("TkDefaultFont")
     def_font.config(family="Helvetica", size=15)
-
-
-CANVAS_DIM = 720
-CANVAS_PAD = 30
-SETWIN_WIDTH = 500
-PLOTWIN_HEIGHT = 500
-FRAMES_PER_GEN = 10
-MS_PER_FRAME = 100
-INITIAL_GEN_POP = 900
-INITIAL_POS = []  # the initial positions at the start of each gen
-for i in range(30):
-        for j in range(30):
-            INITIAL_POS.append((5.0+i*20.0, 5.0+j*20.0))
-
-entities = []  # all entities will be stored and accessed through this array
 
 
 class Root(Tk):
@@ -127,7 +113,6 @@ class SimWindow(Frame):
             return
         self.run()
         self.after(MS_PER_FRAME, self.loop_frames, count - 1)
-        print(count)
 
     def newGen(self):
         if not self.running:

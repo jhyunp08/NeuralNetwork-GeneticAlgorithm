@@ -8,41 +8,46 @@ import matplotlib.pyplot as plt  # visualizing graphs
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import PIL  # image processing
+from hyperparams import *
 
-
-k_velocity = 0.1
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
 def null(x):
-    return 1.0
-
+    return 1.0 #
 
 def llun(x):
     return 1.0
 
+def n_dist(entity):
+    return entity.y/CANVAS_DIM
+
+def s_dist(entity):
+    return 1.0 - entity.y/CANVAS_DIM
+
+def e_dist(entity):
+    return 1.0 - entity.x/CANVAS_DIM
+
+def w_dist(entity):
+    return entity.x/CANVAS_DIM
 
 def move_n(neuron):
     if neuron.value >= 0.5:
         neuron.master.entity.y -= neuron.value * k_velocity
 
-
 def move_s(neuron):
     if neuron.value >= 0.5:
         neuron.master.entity.y += neuron.value * k_velocity
 
-
 def move_e(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.y += neuron.value * k_velocity
-
+        neuron.master.entity.x += neuron.value * k_velocity
 
 def move_w(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.y -= neuron.value * k_velocity
-
+        neuron.master.entity.x -= neuron.value * k_velocity
 
 def population(population):
     pass
@@ -69,7 +74,7 @@ class InputNeuron(Neuron):
         self.input = inputf
 
     def get_input(self):
-        self.value = self.input(self.master)
+        self.value = self.input(self.master.entity)
 
     def copy(self, master):
         return InputNeuron(master, self.id, self.bias, self.input, self.name)
@@ -88,48 +93,48 @@ class OutputNeuron(Neuron):
         self.reset()
 
 
-InputNeurons = [InputNeuron(None, (0,0), 0.0, null, "0"),
-                InputNeuron(None, (0,1), 0.0, llun, "1"),
-                InputNeuron(None, (0,2), 0.0, null, "n"),
-                InputNeuron(None, (0,3), 0.0, null, "s"),
-                InputNeuron(None, (0,4), 0.0, null, "e"),
-                InputNeuron(None, (0,5), 0.0, null, "w"),
-                InputNeuron(None, (0,6), 0.0, null, "n_dist"),
-                InputNeuron(None, (0,7), 0.0, null, "s_dist"),
-                InputNeuron(None, (0,8), 0.0, null, "e_dist"),
-                InputNeuron(None, (0,9), 0.0, null, "w_dist"),
-                InputNeuron(None, (0,10), 0.0, null, "forward"),
-                InputNeuron(None, (0,11), 0.0, null, "forward_dist"),
-                InputNeuron(None, (0,12), 0.0, null, "nearest_dx"),
-                InputNeuron(None, (0,13), 0.0, null, "nearest_dy"),
-                InputNeuron(None, (0,14), 0.0, null, "population"),
-                InputNeuron(None, (0,15), 0.0, null, "oscillator")
-                ]  # 미리 지정한 InputNeuron 들의 list
-OutputNeurons = [OutputNeuron(None, (2,0), 0.0, null, "null"), 
-                OutputNeuron(None, (2,1), 0.0, move_n, "move_n"), 
-                OutputNeuron(None, (2,2), 0.0, move_s, "move_s"), 
-                OutputNeuron(None, (2,3), 0.0, move_e, "move_e"), 
-                OutputNeuron(None, (2,4), 0.0, move_w, "move_w"), 
-                OutputNeuron(None, (2,5), 0.0, null, "move_forward"), 
-                OutputNeuron(None, (2,6), 0.0, null, "rotate")
-                ]
-'''OutputNeuron(None, (2,7), 0.0, null), 
-                OutputNeuron(None, (2,8), 0.0, null), 
-                OutputNeuron(None, (2,9), 0.0, null), 
-                OutputNeuron(None, (2,10), 0.0, null), 
-                OutputNeuron(None, (2,11), 0.0, null), 
-                OutputNeuron(None, (2,12), 0.0, null), 
-                OutputNeuron(None, (2,13), 0.0, null), 
-                OutputNeuron(None, (2,14), 0.0, null), 
-                OutputNeuron(None, (2,15), 0.0, null)'''
-                #] # 미리 지정한 OutputNeuron 들의 list
+InputNeurons = [
+    InputNeuron(None, (0,0), 0.0, null, "0"),
+    InputNeuron(None, (0,1), 0.0, llun, "1"),
+    InputNeuron(None, (0,2), 0.0, null, "n"),
+    InputNeuron(None, (0,3), 0.0, null, "s"),
+    InputNeuron(None, (0,4), 0.0, null, "e"),
+    InputNeuron(None, (0,5), 0.0, null, "w"),
+    InputNeuron(None, (0,6), 0.0, n_dist, "n_dist"),
+    InputNeuron(None, (0,7), 0.0, s_dist, "s_dist"),
+    InputNeuron(None, (0,8), 0.0, e_dist, "e_dist"),
+    InputNeuron(None, (0,9), 0.0, w_dist, "w_dist"),
+    InputNeuron(None, (0,10), 0.0, null, "forward"),
+    InputNeuron(None, (0,11), 0.0, null, "forward_dist"),
+    InputNeuron(None, (0,12), 0.0, null, "nearest_dx"),
+    InputNeuron(None, (0,13), 0.0, null, "nearest_dy"),
+    InputNeuron(None, (0,14), 0.0, null, "population"),
+    InputNeuron(None, (0,15), 0.0, null, "oscillator")            
+]  # 미리 지정한 InputNeuron 들의 list
+OutputNeurons = [
+    OutputNeuron(None, (2,0), 0.0, null, "null"), 
+    OutputNeuron(None, (2,1), 0.0, move_n, "move_n"), 
+    OutputNeuron(None, (2,2), 0.0, move_s, "move_s"), 
+    OutputNeuron(None, (2,3), 0.0, move_e, "move_e"), 
+    OutputNeuron(None, (2,4), 0.0, move_w, "move_w"), 
+    OutputNeuron(None, (2,5), 0.0, null, "move_forward"), 
+    OutputNeuron(None, (2,6), 0.0, null, "rotate"), 
+]
+''' OutputNeuron(None, (2,7), 0.0, null), 
+    OutputNeuron(None, (2,8), 0.0, null), 
+    OutputNeuron(None, (2,9), 0.0, null), 
+    OutputNeuron(None, (2,10), 0.0, null), 
+    OutputNeuron(None, (2,11), 0.0, null), 
+    OutputNeuron(None, (2,12), 0.0, null), 
+    OutputNeuron(None, (2,13), 0.0, null), 
+    OutputNeuron(None, (2,14), 0.0, null), 
+    OutputNeuron(None, (2,15), 0.0, null), '''
+#] # 미리 지정한 OutputNeuron 들의 list
 
 n_InputN = len(InputNeurons)
 n_OutputN = len(OutputNeurons)
-N_INNER = 2  # 은닉층 뉴런 개수
-BRAIN_SIZE = 5  # 최대 connection 개수
-P_MUTATION = 0.04  # 변이 확률
-MAX_WEIGHT = 10.0
+
+entities = []  # all entities will be stored and accessed through this array
 
 
 def interp_gene(network): 
