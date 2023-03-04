@@ -73,10 +73,10 @@ class SimWindow(Frame):
         self.gen = 0
         self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"], text="")
         self.genCount.pack(side=TOP)
-        self.running = True
+        self.running = False
+        self.frameCount = FRAMES_PER_GEN
 
         self.setUp()
-        self.after(1, self.newGen)
     
     def setUp(self):
         # initilaize all entities and assign canvas object oval
@@ -103,20 +103,19 @@ class SimWindow(Frame):
             e.run() ###
         self.update_()
 
-    def loop_frames(self, count):
+    def loop_frames(self):
         if not self.running:
             return
-        if count <= 0:
+        if self.frameCount <= 0:
             self.gen += 1
             self.newGen()
             self.update_()
             return
         self.run()
-        self.after(MS_PER_FRAME, self.loop_frames, count - 1)
+        self.frameCount -= 1
+        self.after(MS_PER_FRAME, self.loop_frames)
 
     def newGen(self):
-        if not self.running:
-            return
         self.genCount.config(text=f"Gen: {self.gen}")
         if self.gen > 0:
             alive_genes = []
@@ -138,7 +137,21 @@ class SimWindow(Frame):
                 print("Simulation Terminated; No Entities Alive")
                 return
         self.place_entities()
-        self.loop_frames(FRAMES_PER_GEN)
+        self.loop_frames()
+    
+    def start_simulation(self):
+        self.running = True
+        self.newGen()
+        self.master.set_win.playpauseButton.config(text="Pause", command=lambda: self.master.set_win.after(1, self.pause_simulation))
+
+    def restart_simulation(self):
+        self.running = True
+        self.loop_frames()
+        self.master.set_win.playpauseButton.config(text="Pause", command=lambda: self.master.set_win.after(1, self.pause_simulation))
+
+    def pause_simulation(self):
+        self.running = False
+        self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.restart_simulation))
 
 
 class SettingWindow(Frame):
@@ -157,7 +170,7 @@ class SettingWindow(Frame):
                                   fg=self.style_dict["fg"],
                                   bg=self.style_dict["pbut_bg"],
                                   highlightbackground=self.style_dict["bg"],
-                                  command=None
+                                  command=lambda: self.after(1, self.master.sim_win.start_simulation)
                                   )
         self.playpauseButton.place(x=10, y=50)
         

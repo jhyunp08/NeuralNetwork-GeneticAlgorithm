@@ -3,7 +3,8 @@ ____________________________________________________
 todo list:
 
 1. output,inputf
-2. play/pause/reset
+2. Inner_Neuron layers
+2. play (v) / pause (v) / reset
 3. population graph
 4. entity.alive
 5. network graph (networkx)
