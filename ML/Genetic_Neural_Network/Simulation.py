@@ -36,10 +36,12 @@ class Root(Tk):
         self.config(menu=self.menu)
         self.createMenu()
 
-        self.style = [{"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white"},
-                      {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white", 
-                      "pbut_bg": "gray", "rbut_bg": "gray17"},
-                      {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white"}]
+        self.style = [
+            {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white"},
+            {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, 
+                "fg": "white", "pbut_bg": "gray", "rbut_bg": "gray17"},
+            {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white"}
+            ]
         self.fonts = {"gen": tkFont.Font(family='times', size=18)}
 
         self.sim_win = SimWindow(self)
@@ -74,7 +76,6 @@ class SimWindow(Frame):
         self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"], text="")
         self.genCount.pack(side=TOP)
         self.running = False
-        self.frameCount = FRAMES_PER_GEN
 
         self.setUp()
     
@@ -106,14 +107,15 @@ class SimWindow(Frame):
     def loop_frames(self):
         if not self.running:
             return
-        if self.frameCount <= 0:
+        global frameCount
+        if frameCount >= FRAMES_PER_GEN:
             self.gen += 1
+            frameCount = 0
             self.newGen()
-            self.update_()
             return
         self.run()
-        self.frameCount -= 1
-        self.after(MS_PER_FRAME, self.loop_frames)
+        frameCount += 1
+        self.after(ms_per_frame, self.loop_frames)
 
     def newGen(self):
         self.genCount.config(text=f"Gen: {self.gen}")
@@ -163,27 +165,49 @@ class SettingWindow(Frame):
         self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
                     highlightthickness=self.style_dict["highlightthickness"])
 
-        self.playpauseButton = Button(self,
-                                  text="Play",
-                                  width=90,
-                                  height=25,
-                                  fg=self.style_dict["fg"],
-                                  bg=self.style_dict["pbut_bg"],
-                                  highlightbackground=self.style_dict["bg"],
-                                  command=lambda: self.after(1, self.master.sim_win.start_simulation)
-                                  )
+        self.playpauseButton = Button(
+            self,
+            text="Play",
+            width=90,
+            height=25,
+            fg=self.style_dict["fg"],
+            bg=self.style_dict["pbut_bg"],
+            highlightbackground=self.style_dict["bg"],
+            command=lambda: self.after(1, self.master.sim_win.start_simulation)
+        )
         self.playpauseButton.place(x=10, y=50)
         
-        self.resetButton = Button(self,
-                                  text="Reset",
-                                  width=90,
-                                  height=25,
-                                  fg=self.style_dict["fg"],
-                                  bg=self.style_dict["rbut_bg"],
-                                  highlightbackground=self.style_dict["bg"],
-                                  command=None
-                                  )
+        self.resetButton = Button(
+            self,
+            text="Reset",
+            width=90,
+            height=25,
+            fg=self.style_dict["fg"],
+            bg=self.style_dict["rbut_bg"],
+            highlightbackground=self.style_dict["bg"],
+            command=None
+        )
         self.resetButton.place(x=120, y=50)
+
+        self.label_timeScale = Label(
+            self,
+            text="time \u00d7:",
+            fg=self.style_dict["fg"],
+            bg=self.style_dict["bg"]
+        )
+        self.label_timeScale.place(x=25, y=100)
+
+        self.timeScale = Scale(
+            self,
+            from_=0.1,
+            to=15,
+            tickinterval=2,
+            length=400,
+            orient=HORIZONTAL
+        )
+        self.timeScale.set(1.0)
+        self.timeScale.place(x=35, y=130)
+
 
 class PlotWindow(Frame):
     def __init__(self, master):

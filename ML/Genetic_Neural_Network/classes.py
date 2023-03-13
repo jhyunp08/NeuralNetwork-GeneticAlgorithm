@@ -14,6 +14,9 @@ from hyperparams import *
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
+def sigmoid_prime(x, y):
+    return 1 / (1 + np.exp(-x+y))
+
 
 def null(x):
     return 1.0 #
@@ -21,36 +24,56 @@ def null(x):
 def llun(x):
     return 1.0
 
-def n_dist(entity):
+def n(entity):
     return entity.y/CANVAS_DIM
 
-def s_dist(entity):
+def s(entity):
     return 1.0 - entity.y/CANVAS_DIM
 
-def e_dist(entity):
+def e(entity):
     return 1.0 - entity.x/CANVAS_DIM
 
-def w_dist(entity):
+def w(entity):
     return entity.x/CANVAS_DIM
+
+def population(entity):
+    return (entities.alive / INITIAL_GEN_POP)
+
+def n_dist(entity):
+    x, y = entity.x, entity.y
+    nearest_y= max([e.y for e in entities if ((e != entity) and (e.x == x) and (e.y <= y))] + [-float('inf')])
+    return sigmoid_prime(y - nearest_y, CANVAS_DIM/8)
+
+def s_dist(entity):
+    x, y = entity.x, entity.y
+    nearest_y= min([e.y for e in entities if ((e != entity) and (e.x == x) and (e.y >= y))] + [float('inf')])
+    return sigmoid_prime(nearest_y - y, CANVAS_DIM/8)
+
+def e_dist(entity):
+    x, y = entity.x, entity.y
+    nearest_x= min([e.y for e in entities if ((e != entity) and (e.y == y) and (e.x >= x))] + [float('inf')])
+    return sigmoid_prime(nearest_x - x, CANVAS_DIM/8)
+
+def w_dist(entity):
+    x, y = entity.x, entity.y
+    nearest_x= max([e.y for e in entities if ((e != entity) and (e.y == y) and (e.x <= x))] + [-float('inf')])
+    return sigmoid_prime(x - nearest_x, CANVAS_DIM/8)
 
 def move_n(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.y -= neuron.value * k_velocity
+        neuron.master.entity.y -= neuron.value * K_VELOCITY
 
 def move_s(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.y += neuron.value * k_velocity
+        neuron.master.entity.y += neuron.value * K_VELOCITY
 
 def move_e(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.x += neuron.value * k_velocity
+        neuron.master.entity.x += neuron.value * K_VELOCITY
 
 def move_w(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.x -= neuron.value * k_velocity
-
-def population(population):
-    pass
+        neuron.master.entity.x -= neuron.value * K_VELOCITY
 
 
 class Neuron:
@@ -96,10 +119,10 @@ class OutputNeuron(Neuron):
 InputNeurons = [
     InputNeuron(None, (0,0), 0.0, null, "0"),
     InputNeuron(None, (0,1), 0.0, llun, "1"),
-    InputNeuron(None, (0,2), 0.0, null, "n"),
-    InputNeuron(None, (0,3), 0.0, null, "s"),
-    InputNeuron(None, (0,4), 0.0, null, "e"),
-    InputNeuron(None, (0,5), 0.0, null, "w"),
+    InputNeuron(None, (0,2), 0.0, n, "n"),
+    InputNeuron(None, (0,3), 0.0, s, "s"),
+    InputNeuron(None, (0,4), 0.0, e, "e"),
+    InputNeuron(None, (0,5), 0.0, w, "w"),
     InputNeuron(None, (0,6), 0.0, n_dist, "n_dist"),
     InputNeuron(None, (0,7), 0.0, s_dist, "s_dist"),
     InputNeuron(None, (0,8), 0.0, e_dist, "e_dist"),
@@ -108,7 +131,7 @@ InputNeurons = [
     InputNeuron(None, (0,11), 0.0, null, "forward_dist"),
     InputNeuron(None, (0,12), 0.0, null, "nearest_dx"),
     InputNeuron(None, (0,13), 0.0, null, "nearest_dy"),
-    InputNeuron(None, (0,14), 0.0, null, "population"),
+    InputNeuron(None, (0,14), 0.0, population, "population"),
     InputNeuron(None, (0,15), 0.0, null, "oscillator")            
 ]  # 미리 지정한 InputNeuron 들의 list
 OutputNeurons = [
@@ -133,8 +156,6 @@ OutputNeurons = [
 
 n_InputN = len(InputNeurons)
 n_OutputN = len(OutputNeurons)
-
-entities = []  # all entities will be stored and accessed through this array
 
 
 def interp_gene(network): 
@@ -272,7 +293,9 @@ class Entity:
         self.network = None
         self.x = 0
         self.y = 0
-        self.alive = True
+        if not self.alive:
+            self.alive = True
+            entities.alive += 1
         self.point = 0
 
     def status_check(self):
@@ -280,8 +303,10 @@ class Entity:
         if self.alive:
             if self.point >= 0:
                 self.alive = True
+                ##
             else:
                 self.alive = False
+                entities.alive -= 1
         else:
             pass
 
@@ -294,9 +319,7 @@ class Entity:
 if __name__ == "__main__":
     net = Network(None, N_INNER, '01a000029fff1029b82b394813579b')
     net2 = Network(None, N_INNER, '011fff300000300000300000300000')
-    for inp in net.input_neurons:
-        inp.value = rand.random()
-    net.run()
+    # net.run()
     net.makeGraph()
     print('done')
     # 테스트할 거 있으면
