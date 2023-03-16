@@ -35,21 +35,21 @@ Input & Output:
    
      Input:
      
-             |0,1|
-             |n,n_distance| => input distance to north wall, distance nearest entity north
-             |s,s_distance| => input distance to south wall, distance nearest entity south
-             |e,e_distance| => input distance to east wall, distance nearest entity east
-             |w,w_distance| => input distance to west wall, distance nearest entity west
-             |forward,forward_distance|  => input forward (nsew), distance to nearest entity forward
+             |null, llun| => 0, 1
+             |dist_n, closest_n| => input distance to north wall, distance nearest entity north
+             |dist_s, closest_s| => input distance to south wall, distance nearest entity south
+             |dist_e, closest_e| => input distance to east wall, distance nearest entity east
+             |dist_w, closest_w| => input distance to west wall, distance nearest entity west
+             |dist_fwd, closest_fwd|  => input forward (nsew), distance to nearest entity forward
              |elapsed_time| => input how many time has passed
              |oscillator| => ...
      
      Output:
         
         |null|
-        |move_to_north| => move entity north
-        |move_to_south| => move entity south
-        |move_to_east| => move entity east
-        |move_to_west| => move entity west
-        |move_to_forward| => move entity forward
+        |move_n| => move entity north
+        |move_s| => move entity south
+        |move_e| => move entity east
+        |move_w| => move entity west
+        |move_fwd| => move entity forward
         |rotate| => change direction of entity

@@ -11,53 +11,62 @@ import PIL  # image processing
 from hyperparams import *
 
 
-def sigmoid(x):
+def sigmoid(x: float) -> float:
     return 1 / (1 + np.exp(-x))
 
-def sigmoid_prime(x, y):
+def sigmoid_prime(x: float, y: float) -> float:
     return 1 / (1 + np.exp(-x+y))
 
 
-def null(x):
-    return 1.0 #
+def null(x) -> float:
+    return 0.0
 
-def llun(x):
+def llun(x) -> float:
     return 1.0
 
-def n(entity):
+def dist_n(entity) -> float:
     return entity.y/CANVAS_DIM
 
-def s(entity):
+def dist_s(entity) -> float:
     return 1.0 - entity.y/CANVAS_DIM
 
-def e(entity):
+def dist_e(entity) -> float:
     return 1.0 - entity.x/CANVAS_DIM
 
-def w(entity):
+def dist_w(entity) -> float:
     return entity.x/CANVAS_DIM
 
-def population(entity):
-    return (entities.alive / INITIAL_GEN_POP)
+def dist_fwd(entity) -> float:
+    dist_dict = [dist_n, dist_e, dist_s, dist_w]
+    return dist_dict[entity.direction](entity)
 
-def n_dist(entity):
+def closest_n(entity) -> float:
     x, y = entity.x, entity.y
     nearest_y= max([e.y for e in entities if ((e != entity) and (e.x == x) and (e.y <= y))] + [-float('inf')])
     return sigmoid_prime(y - nearest_y, CANVAS_DIM/8)
 
-def s_dist(entity):
+def closest_s(entity) -> float:
     x, y = entity.x, entity.y
     nearest_y= min([e.y for e in entities if ((e != entity) and (e.x == x) and (e.y >= y))] + [float('inf')])
     return sigmoid_prime(nearest_y - y, CANVAS_DIM/8)
 
-def e_dist(entity):
+def closest_e(entity) -> float:
     x, y = entity.x, entity.y
     nearest_x= min([e.y for e in entities if ((e != entity) and (e.y == y) and (e.x >= x))] + [float('inf')])
     return sigmoid_prime(nearest_x - x, CANVAS_DIM/8)
 
-def w_dist(entity):
+def closest_w(entity) -> float:
     x, y = entity.x, entity.y
     nearest_x= max([e.y for e in entities if ((e != entity) and (e.y == y) and (e.x <= x))] + [-float('inf')])
     return sigmoid_prime(x - nearest_x, CANVAS_DIM/8)
+
+def closest_fwd(entity) -> float:
+    closest_dict = [closest_n, closest_e, closest_s, closest_w]
+    return closest_dict[entity.direction](entity)
+
+def population(entity) -> float:
+    return (entities.alive / INITIAL_GEN_POP)
+
 
 def move_n(neuron):
     if neuron.value >= 0.5:
@@ -74,6 +83,19 @@ def move_e(neuron):
 def move_w(neuron):
     if neuron.value >= 0.5:
         neuron.master.entity.x -= neuron.value * K_VELOCITY
+
+def move_fwd(neuron):
+    if neuron.value >= 0.5:
+        move_list = [move_n, move_e, move_s, move_w]
+        move_list[neuron.master.entity.direction](neuron)
+
+def rotate(neuron):
+    if neuron.value >= 0.25:
+        neuron.master.entity.direction = (neuron.master.entity.direction  - 1) % 4
+        return
+    if neuron.value <= 0.75:
+        neuron.master.entity.direction = (neuron.master.entity.direction  + 1) % 4
+        return
 
 
 class Neuron:
@@ -119,16 +141,16 @@ class OutputNeuron(Neuron):
 InputNeurons = [
     InputNeuron(None, (0,0), 0.0, null, "0"),
     InputNeuron(None, (0,1), 0.0, llun, "1"),
-    InputNeuron(None, (0,2), 0.0, n, "n"),
-    InputNeuron(None, (0,3), 0.0, s, "s"),
-    InputNeuron(None, (0,4), 0.0, e, "e"),
-    InputNeuron(None, (0,5), 0.0, w, "w"),
-    InputNeuron(None, (0,6), 0.0, n_dist, "n_dist"),
-    InputNeuron(None, (0,7), 0.0, s_dist, "s_dist"),
-    InputNeuron(None, (0,8), 0.0, e_dist, "e_dist"),
-    InputNeuron(None, (0,9), 0.0, w_dist, "w_dist"),
-    InputNeuron(None, (0,10), 0.0, null, "forward"),
-    InputNeuron(None, (0,11), 0.0, null, "forward_dist"),
+    InputNeuron(None, (0,2), 0.0, dist_n, "dist_n"),
+    InputNeuron(None, (0,3), 0.0, dist_s, "dist_s"),
+    InputNeuron(None, (0,4), 0.0, dist_e, "dist_e"),
+    InputNeuron(None, (0,5), 0.0, dist_w, "dist_w"),
+    InputNeuron(None, (0,6), 0.0, dist_fwd, "dist_fwd"),
+    InputNeuron(None, (0,7), 0.0, closest_n, "closest_n"),
+    InputNeuron(None, (0,8), 0.0, closest_s, "closest_s"),
+    InputNeuron(None, (0,9), 0.0, closest_e, "closest_e"),
+    InputNeuron(None, (0,10), 0.0, closest_w, "closest_w"),
+    InputNeuron(None, (0,11), 0.0, closest_fwd, "closest_fwd"),
     InputNeuron(None, (0,12), 0.0, null, "nearest_dx"),
     InputNeuron(None, (0,13), 0.0, null, "nearest_dy"),
     InputNeuron(None, (0,14), 0.0, population, "population"),
@@ -140,8 +162,8 @@ OutputNeurons = [
     OutputNeuron(None, (2,2), 0.0, move_s, "move_s"), 
     OutputNeuron(None, (2,3), 0.0, move_e, "move_e"), 
     OutputNeuron(None, (2,4), 0.0, move_w, "move_w"), 
-    OutputNeuron(None, (2,5), 0.0, null, "move_forward"), 
-    OutputNeuron(None, (2,6), 0.0, null, "rotate"), 
+    OutputNeuron(None, (2,5), 0.0, move_fwd, "move_fwd"), 
+    OutputNeuron(None, (2,6), 0.0, rotate, "rotate"), 
 ]
 ''' OutputNeuron(None, (2,7), 0.0, null), 
     OutputNeuron(None, (2,8), 0.0, null), 
@@ -285,6 +307,7 @@ class Entity:
         self.network = None
         self.x = x
         self.y = y
+        self.direction = 0
         self.alive = True
         self.point = 0
 
