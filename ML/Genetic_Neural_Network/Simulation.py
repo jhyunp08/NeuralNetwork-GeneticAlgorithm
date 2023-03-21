@@ -36,12 +36,13 @@ class Root(Tk):
         self.config(menu=self.menu)
         self.createMenu()
 
-        self.style = [
-            {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white"},
-            {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, 
-                "fg": "white", "pbut_bg": "gray", "rbut_bg": "gray17"},
-            {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white"}
-            ]
+        self.style = {
+            "sim": {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white",
+                    "goal": "#07c142", "dead": "#b33535", "wall": "gray"},
+            "set": {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2,
+                    "fg": "white", "pbut_bg": "gray", "rbut_bg": "gray17"},
+            "plot": {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white"}
+        }
         self.fonts = {"gen": tkFont.Font(family='times', size=18)}
 
         self.sim_win = SimWindow(self)
@@ -65,7 +66,7 @@ class SimWindow(Frame):
         Frame.__init__(self, master, width=CANVAS_DIM + 2*CANVAS_PAD, height=CANVAS_DIM + 2*CANVAS_PAD)
         self.master = master
         self.pack(side=LEFT, fill=BOTH, expand=1)
-        self.style_dict = self.master.style[0]
+        self.style_dict = self.master.style["sim"]
         self.config(bg=self.style_dict["bg"])
 
         self.canvas = Canvas(self, width=self.cget("width") - 2*CANVAS_PAD, height=self.cget("height") - 2*CANVAS_PAD,
@@ -75,12 +76,22 @@ class SimWindow(Frame):
         self.gen = 0
         self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"], text="")
         self.genCount.pack(side=TOP)
+
+        self.survived = []
         self.running = False
 
         self.setUp()
     
     def setUp(self):
-        # initilaize all entities and assign canvas object oval
+        for rectangle in GOAL_ZONE:
+            self.canvas.create_rectangle(rectangle[0][0], rectangle[1][0], rectangle[0][1], rectangle[1][1],
+                                         fill=self.style_dict["goal"], outline=self.style_dict["goal"], tags="goal")
+        for rectangle in DEAD_ZONE:
+            self.canvas.create_rectangle(rectangle[0][0], rectangle[1][0], rectangle[0][1], rectangle[1][1],
+                                         fill=self.style_dict["dead"], outline=self.style_dict["dead"], tags="dead")
+        for rectangle in WALLS:
+            self.canvas.create_rectangle(rectangle[0][0], rectangle[1][0], rectangle[0][1], rectangle[1][1],
+                                         fill=self.style_dict["wall"], outline=self.style_dict["wall"], tags="wall")
         for i in range(INITIAL_GEN_POP):
             e = Entity(0, 0)
             e.network = Network(e, N_INNER, randGene())
@@ -123,9 +134,13 @@ class SimWindow(Frame):
             alive_genes = []
             new_genes = []
             for e in entities:
-                if e.alive:
+                if e.inRectangles(GOAL_ZONE):
                     alive_genes.append(e.network.gene)
                 e.reset()
+            for e in entities_dead:
+                entities.append(e)
+            entities_dead.clear()
+            self.survived.append(len(alive_genes))
             if alive_genes:
                 rand.shuffle(alive_genes)
                 i = 0
@@ -136,6 +151,7 @@ class SimWindow(Frame):
                     e = entities[i]
                     e.network = Network(e, N_INNER, new_genes[i])
             else:
+                self.pause_simulation()
                 print("Simulation Terminated; No Entities Alive")
                 return
         self.place_entities()
@@ -155,13 +171,21 @@ class SimWindow(Frame):
         self.running = False
         self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.restart_simulation))
 
+    def reset_simulation(self):
+        self.running = False
+        self.gen = 0
+        global frameCount
+        frameCount = 0
+        self.after(5, self.place_entities())
+        self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.start_simulation))
+
 
 class SettingWindow(Frame):
     def __init__(self, master):
         Frame.__init__(self, master, width=SETWIN_WIDTH, height=CANVAS_DIM+2*CANVAS_PAD-PLOTWIN_HEIGHT)
         self.master = master
         self.pack(side=TOP, expand=1)
-        self.style_dict = self.master.style[1]
+        self.style_dict = self.master.style["set"]
         self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
                     highlightthickness=self.style_dict["highlightthickness"])
 
@@ -185,7 +209,7 @@ class SettingWindow(Frame):
             fg=self.style_dict["fg"],
             bg=self.style_dict["rbut_bg"],
             highlightbackground=self.style_dict["bg"],
-            command=None
+            command=lambda: self.after(1, self.master.sim_win.reset_simulation)
         )
         self.resetButton.place(x=120, y=50)
 
@@ -214,7 +238,7 @@ class PlotWindow(Frame):
         Frame.__init__(self, master, width=SETWIN_WIDTH, height=PLOTWIN_HEIGHT)
         self.master = master
         self.pack(side=RIGHT, expand=0)
-        self.style_dict = self.master.style[2]
+        self.style_dict = self.master.style["plot"]
         self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
                     highlightthickness=self.style_dict["highlightthickness"])
 

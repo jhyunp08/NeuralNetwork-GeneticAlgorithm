@@ -6,10 +6,9 @@ todo list:
 2. Inner_Neuron layers
 2. play (v) / pause (v) / reset
 3. population graph
-4. entity.alive
 5. network graph (networkx)
 6. timescale + (other params)
-7. assign rgb from gene
+7. assign hsv from gene
 8. gene dist_graph
 9. cleanup imports
 10. UI

@@ -37,8 +37,8 @@ def dist_w(entity) -> float:
     return entity.x/CANVAS_DIM
 
 def dist_fwd(entity) -> float:
-    dist_dict = [dist_n, dist_e, dist_s, dist_w]
-    return dist_dict[entity.direction](entity)
+    dist_list = [dist_n, dist_n, dist_e, dist_e, dist_s, dist_s, dist_w, dist_w]
+    return dist_list[entity.direction](entity)
 
 def closest_n(entity) -> float:
     x, y = entity.x, entity.y
@@ -61,8 +61,8 @@ def closest_w(entity) -> float:
     return sigmoid_prime(x - nearest_x, CANVAS_DIM/8)
 
 def closest_fwd(entity) -> float:
-    closest_dict = [closest_n, closest_e, closest_s, closest_w]
-    return closest_dict[entity.direction](entity)
+    closest_list = [closest_n, closest_n, closest_e, closest_e, closest_s, closest_s, closest_w, closest_w]
+    return closest_list[entity.direction](entity)
 
 def population(entity) -> float:
     return (entities.alive / INITIAL_GEN_POP)
@@ -70,31 +70,49 @@ def population(entity) -> float:
 
 def move_n(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.y -= neuron.value * K_VELOCITY
+        neuron.master.entity.move_y(-neuron.value * K_VELOCITY)
 
 def move_s(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.y += neuron.value * K_VELOCITY
+        neuron.master.entity.move_y(neuron.value * K_VELOCITY)
 
 def move_e(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.x += neuron.value * K_VELOCITY
+        neuron.master.entity.move_x(neuron.value * K_VELOCITY)
 
 def move_w(neuron):
     if neuron.value >= 0.5:
-        neuron.master.entity.x -= neuron.value * K_VELOCITY
+        neuron.master.entity.move_x(-neuron.value * K_VELOCITY)
+
+def move_hrz(neuron):
+    if neuron.value <= 0.25:
+        neuron.master.entity.move_x(-neuron.value * K_VELOCITY)
+    elif neuron.value >= 0.75:
+        neuron.master.entity.move_x(neuron.value * K_VELOCITY)
+
+def move_vrt(neuron):
+    if neuron.value <= 0.25:
+        neuron.master.entity.move_y(-neuron.value * K_VELOCITY)
+    elif neuron.value >= 0.75:
+        neuron.master.entity.move_y(neuron.value * K_VELOCITY)
+
+
+move_ne = lambda neuron: (move_n(neuron), move_e(neuron))[0]
+move_nw = lambda neuron: (move_n(neuron), move_w(neuron))[0]
+move_se = lambda neuron: (move_s(neuron), move_e(neuron))[0]
+move_sw = lambda neuron: (move_s(neuron), move_w(neuron))[0]
 
 def move_fwd(neuron):
     if neuron.value >= 0.5:
-        move_list = [move_n, move_e, move_s, move_w]
+        move_list = [move_n, move_ne, move_e, move_se, move_s, move_sw, move_w, move_nw]
         move_list[neuron.master.entity.direction](neuron)
 
 def rotate(neuron):
     if neuron.value >= 0.25:
-        neuron.master.entity.direction = (neuron.master.entity.direction  - 1) % 4
+        neuron.master.entity.direction = (neuron.master.entity.direction  - 1) % 8
         return
     if neuron.value <= 0.75:
-        neuron.master.entity.direction = (neuron.master.entity.direction  + 1) % 4
+        neuron.master.entity.direction = (neuron.master.entity.direction  + 1) % 8
         return
 
 
@@ -162,11 +180,12 @@ OutputNeurons = [
     OutputNeuron(None, (2,2), 0.0, move_s, "move_s"), 
     OutputNeuron(None, (2,3), 0.0, move_e, "move_e"), 
     OutputNeuron(None, (2,4), 0.0, move_w, "move_w"), 
-    OutputNeuron(None, (2,5), 0.0, move_fwd, "move_fwd"), 
-    OutputNeuron(None, (2,6), 0.0, rotate, "rotate"), 
+    OutputNeuron(None, (2,5), 0.0, move_hrz, "move_hrz"), 
+    OutputNeuron(None, (2,6), 0.0, move_vrt, "move_vrt"), 
+    OutputNeuron(None, (2,7), 0.0, move_fwd, "move_fwd"), 
+    OutputNeuron(None, (2,8), 0.0, rotate, "rotate"), 
 ]
-''' OutputNeuron(None, (2,7), 0.0, null), 
-    OutputNeuron(None, (2,8), 0.0, null), 
+'''
     OutputNeuron(None, (2,9), 0.0, null), 
     OutputNeuron(None, (2,10), 0.0, null), 
     OutputNeuron(None, (2,11), 0.0, null), 
@@ -237,6 +256,7 @@ class Network:
                             []]  # connections[0]: input->output, connections[1]: input->inner, connections[2]: inner->output
         # connection = (source, sink, weight)
         interp_gene(self)
+        self.color = ""
 
     def run(self):
         # calculate neurons
@@ -309,7 +329,6 @@ class Entity:
         self.y = y
         self.direction = 0
         self.alive = True
-        self.point = 0
 
     def reset(self):  
         # reset Entity for new round
@@ -318,18 +337,46 @@ class Entity:
         self.y = 0
         if not self.alive:
             self.alive = True
-            entities.alive += 1
-        self.point = 0
+
+    def inRect(self, coords: tuple, rectangle) -> bool:
+        x, y = coords
+        interval_x, interval_y = rectangle
+        return (interval_x[0] <= x <= interval_x[1]) and (interval_y[0] <= y <= interval_y[1])
+    
+    def inRectangles(self, rectangles:list) -> bool:
+        for rectangle in rectangles:
+            if self.inRect((self.x, self.y), rectangle):
+                return True
+        return False
+    
+    def move_x(self, delta_x):
+        x_prime = self.x + delta_x
+        if not (0 <= x_prime <= CANVAS_DIM):
+            return
+        for rectangle in WALLS:
+            if self.inRect((x_prime, self.y), rectangle):
+                return
+        self.x = x_prime
+    
+    def move_y(self, delta_y):
+        y_prime = self.y + delta_y
+        if not (0 <= y_prime <= CANVAS_DIM):
+            return
+        for rectangle in WALLS:
+            if self.inRect((self.x, y_prime), rectangle):
+                return
+        self.y = y_prime
 
     def status_check(self):
         # check if Entity is alive
         if self.alive:
-            if self.point >= 0:
-                self.alive = True
-                ##
-            else:
+            if self.inRectangles(DEAD_ZONE):
                 self.alive = False
+                entities.remove(self)
+                entities_dead.append(self)
                 entities.alive -= 1
+            else:
+                self.alive = True
         else:
             pass
 
