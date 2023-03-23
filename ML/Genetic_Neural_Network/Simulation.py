@@ -80,9 +80,9 @@ class SimWindow(Frame):
         self.survived = []
         self.running = False
 
-        self.setUp()
+        self.setUpEnv()
     
-    def setUp(self):
+    def setUpEnv(self):
         for rectangle in GOAL_ZONE:
             self.canvas.create_rectangle(rectangle[0][0], rectangle[1][0], rectangle[0][1], rectangle[1][1],
                                          fill=self.style_dict["goal"], outline=self.style_dict["goal"], tags="goal")
@@ -92,12 +92,24 @@ class SimWindow(Frame):
         for rectangle in WALLS:
             self.canvas.create_rectangle(rectangle[0][0], rectangle[1][0], rectangle[0][1], rectangle[1][1],
                                          fill=self.style_dict["wall"], outline=self.style_dict["wall"], tags="wall")
+    
+    def setUpEnt(self):
         for i in range(INITIAL_GEN_POP):
             e = Entity(0, 0)
             e.network = Network(e, N_INNER, randGene())
             entities.append(e)
         for e in entities:
             e.obj = self.canvas.create_oval(e.x-1, e.y-1, e.x+1, e.y+1, fill=self.style_dict["fg"], tags="entity")
+
+    def resetUp(self):
+        self.gen = 0
+        self.survived.clear()
+        global frameCount
+        frameCount = 0
+        entities.clear()
+        entities_dead.clear()
+        self.canvas.delete("entity")
+        self.master.plot_win.reset()
 
     def update_(self):
         for e in entities:
@@ -131,21 +143,22 @@ class SimWindow(Frame):
     def newGen(self):
         self.genCount.config(text=f"Gen: {self.gen}")
         if self.gen > 0:
-            alive_genes = []
+            surviving_genes = []
             new_genes = []
             for e in entities:
                 if e.inRectangles(GOAL_ZONE):
-                    alive_genes.append(e.network.gene)
+                    surviving_genes.append(e.network.gene)
                 e.reset()
             for e in entities_dead:
                 entities.append(e)
             entities_dead.clear()
-            self.survived.append(len(alive_genes))
-            if alive_genes:
-                rand.shuffle(alive_genes)
+            self.survived.append(surviving_genes)
+            self.master.plot_win.plot_point("pop_1", self.gen-1, len(surviving_genes), 'b')
+            if surviving_genes:
+                rand.shuffle(surviving_genes)
                 i = 0
                 while i < INITIAL_GEN_POP:
-                    new_genes.append(mutateGene(alive_genes[i % len(alive_genes)]))
+                    new_genes.append(mutateGene(surviving_genes[i % len(surviving_genes)]))
                     i += 1
                 for i in range(INITIAL_GEN_POP):
                     e = entities[i]
@@ -158,6 +171,7 @@ class SimWindow(Frame):
         self.loop_frames()
     
     def start_simulation(self):
+        self.setUpEnt()
         self.running = True
         self.newGen()
         self.master.set_win.playpauseButton.config(text="Pause", command=lambda: self.master.set_win.after(1, self.pause_simulation))
@@ -173,10 +187,7 @@ class SimWindow(Frame):
 
     def reset_simulation(self):
         self.running = False
-        self.gen = 0
-        global frameCount
-        frameCount = 0
-        self.after(5, self.place_entities())
+        self.after(1, self.resetUp())
         self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.start_simulation))
 
 
@@ -247,8 +258,8 @@ class PlotWindow(Frame):
         self.plot_pop_1 = self.figure_pop.add_subplot(1, 1, 1)
         self.plot_pop_1.set_title("Population")
         self.plot_pop_1.set_xlabel("gen")
-        self.plot_pop_1.set_xlim(0, 100)
-        self.plot_pop_1.plot([np.sin(i) + 100 for i in range(100)], 'b')
+        self.plot_pop_1.set_xbound(0, 25)
+        self.plot_pop_1.set_ylim(0, 900)
 
         self.graph_pop = FigureCanvasTkAgg(self.figure_pop, master = self)
         self.graph_pop.draw()
@@ -266,6 +277,29 @@ class PlotWindow(Frame):
         self.graph_gene.draw()
         self.graph_gene.get_tk_widget().place(x=10, y=250)
 
+    def set_plots(self):
+        self.plot_pop_1.set_title("Population")
+        self.plot_pop_1.set_xlabel("gen")
+        self.plot_pop_1.set_xbound(0, 25)
+        self.plot_pop_1.set_ylim(0, 900)
+
+        self.plot_gene_1.set_title("Gen Pool")
+        self.plot_gene_1.set_xlabel("gen")
+    
+    def reset(self):
+        self.plot_pop_1.clear()
+        self.plot_gene_1.clear()
+        self.set_plots()
+        self.graph_pop.draw()
+        self.graph_gene.draw()
+
+    def plot_point(self, plot, x, y, color):
+        plot_dict = {
+            "pop_1": (self.graph_pop, self.plot_pop_1),
+            "gene_1": (self.graph_gene, self.plot_gene_1)
+        }
+        plot_dict[plot][1].scatter([x], [y], color=color)
+        plot_dict[plot][0].draw()
 
 
 if __name__ == "__main__":

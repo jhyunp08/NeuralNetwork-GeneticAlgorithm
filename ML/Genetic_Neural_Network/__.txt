@@ -51,5 +51,7 @@ Input & Output:
         |move_s| => move entity south
         |move_e| => move entity east
         |move_w| => move entity west
+        |move_hrz| => move entity in +- x direction
+        |move_vrt| => move entity in +- y direction
         |move_fwd| => move entity forward
         |rotate| => change direction of entity

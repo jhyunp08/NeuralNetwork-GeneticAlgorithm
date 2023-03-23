@@ -4,7 +4,6 @@ todo list:
 
 1. output,inputf
 2. Inner_Neuron layers
-2. play (v) / pause (v) / reset
 3. population graph
 5. network graph (networkx)
 6. timescale + (other params)
