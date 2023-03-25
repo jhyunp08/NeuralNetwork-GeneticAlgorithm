@@ -14,58 +14,123 @@ from hyperparams import *
 def sigmoid(x: float) -> float:
     return 1 / (1 + np.exp(-x))
 
-def sigmoid_prime(x: float, y: float) -> float:
-    return 1 / (1 + np.exp(-x+y))
+def sigmoid_prime(x: float, m: float) -> float:
+    return sigmoid(x-m)
 
 
-def null(x) -> float:
+def null(__) -> float:
     return 0.0
 
-def llun(x) -> float:
+def llun(__) -> float:
     return 1.0
 
-def dist_n(entity) -> float:
-    return entity.y/CANVAS_DIM
 
-def dist_s(entity) -> float:
-    return 1.0 - entity.y/CANVAS_DIM
-
-def dist_e(entity) -> float:
-    return 1.0 - entity.x/CANVAS_DIM
-
-def dist_w(entity) -> float:
+def x(entity) -> float:
     return entity.x/CANVAS_DIM
 
-def dist_fwd(entity) -> float:
-    dist_list = [dist_n, dist_n, dist_e, dist_e, dist_s, dist_s, dist_w, dist_w]
-    return dist_list[entity.direction](entity)
+def y(entity) -> float:
+    return entity.y/CANVAS_DIM
 
-def closest_n(entity) -> float:
+
+def dist_n(entity) -> float:
     x, y = entity.x, entity.y
-    nearest_y= max([e.y for e in entities if ((e != entity) and (e.x == x) and (e.y <= y))] + [-float('inf')])
+    nearest_y = max([wall[1][1] for wall in WALLS if ((wall[0][0] <= x <= wall[0][1]) and (wall[1][1] <= y))] + [0])
     return sigmoid_prime(y - nearest_y, CANVAS_DIM/8)
 
-def closest_s(entity) -> float:
+def dist_s(entity) -> float:
     x, y = entity.x, entity.y
-    nearest_y= min([e.y for e in entities if ((e != entity) and (e.x == x) and (e.y >= y))] + [float('inf')])
+    nearest_y = min([wall[1][0] for wall in WALLS if ((wall[0][0] <= x <= wall[0][1]) and (wall[1][0] >= y))] + [CANVAS_DIM])
     return sigmoid_prime(nearest_y - y, CANVAS_DIM/8)
 
-def closest_e(entity) -> float:
+def dist_e(entity) -> float:
     x, y = entity.x, entity.y
-    nearest_x= min([e.y for e in entities if ((e != entity) and (e.y == y) and (e.x >= x))] + [float('inf')])
+    nearest_x = min([wall[0][0] for wall in WALLS if ((wall[1][0] <= y <= wall[1][1]) and (wall[0][0] >= x))] + [CANVAS_DIM])
     return sigmoid_prime(nearest_x - x, CANVAS_DIM/8)
 
-def closest_w(entity) -> float:
+def dist_w(entity) -> float:
     x, y = entity.x, entity.y
-    nearest_x= max([e.y for e in entities if ((e != entity) and (e.y == y) and (e.x <= x))] + [-float('inf')])
+    nearest_x = max([wall[0][1] for wall in WALLS if ((wall[1][0] <= y <= wall[1][1]) and (wall[0][1] <= x))] + [0])
     return sigmoid_prime(x - nearest_x, CANVAS_DIM/8)
 
-def closest_fwd(entity) -> float:
-    closest_list = [closest_n, closest_n, closest_e, closest_e, closest_s, closest_s, closest_w, closest_w]
-    return closest_list[entity.direction](entity)
+_dist_ne = lambda entity: min(dist_n(entity), dist_e(entity))
+_dist_nw= lambda entity: min(dist_n(entity), dist_w(entity))
+_dist_se = lambda entity: min(dist_s(entity), dist_e(entity))
+_dist_sw = lambda entity: min(dist_s(entity), dist_w(entity))
+
+def dist_fwd(entity) -> float:
+    dist_list = [dist_n, _dist_ne, dist_e, _dist_se, dist_s, _dist_sw, dist_w, _dist_nw]
+    return dist_list[entity.direction](entity)
+
+
+def nearest_d(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if (e != entity)] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def nearest_dx(entity) -> float:
+    x = entity.x
+    nearest_dist = min([abs(e.x - x) for e in entities if ((e != entity) and (e.x == x))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def nearest_dy(entity) -> float:
+    y = entity.y
+    nearest_dist = min([abs(e.y - y) for e in entities if ((e != entity) and (e.y == y))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_n(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and ((y - e.y) >= abs(e.x - x)))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_s(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and ((e.y - y) >= abs(e.x - x)))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_e(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and ((e.x - x) >= abs(e.y - y)))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_w(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and ((x - e.x) >= abs(e.y - y)))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_ne(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and (e.x >= x) and (e.y <= y))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_nw(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and (e.x <= x) and (e.y <= y))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_se(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and (e.x >= x) and (e.y >= y))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def _nearest_sw(entity) -> float:
+    x, y = entity.x, entity.y
+    nearest_dist = min([(abs(e.x - x) + abs(e.y - y)) for e in entities if ((e != entity) and (e.x <= x) and (e.y >= y))] + [float('inf')])
+    return sigmoid_prime(nearest_dist, CANVAS_DIM/8)
+
+def nearest_fwd(entity) -> float:
+    nearest_list = [_nearest_n, _nearest_ne, _nearest_e, _nearest_se, _nearest_s, _nearest_sw, _nearest_w, _nearest_nw]
+    return nearest_list[entity.direction](entity)
+
+
+def elapsed_t(entity) -> float:
+    return (frameCount / FRAMES_PER_GEN)
 
 def population(entity) -> float:
     return (entities.alive / INITIAL_GEN_POP)
+
+def oscillator(entity) -> float:
+    return ((np.sin(2 * np.pi * entity.freq * frameCount) + 1.0) / 2)
+
 
 
 def move_n(neuron):
@@ -86,34 +151,46 @@ def move_w(neuron):
 
 def move_hrz(neuron):
     if neuron.value <= 0.25:
-        neuron.master.entity.move_x(-neuron.value * K_VELOCITY)
+        neuron.master.entity.move_x(-(1.0 - 2*neuron.value) * K_VELOCITY)
     elif neuron.value >= 0.75:
-        neuron.master.entity.move_x(neuron.value * K_VELOCITY)
+        neuron.master.entity.move_x((2*neuron.value - 1.0) * K_VELOCITY)
 
 def move_vrt(neuron):
     if neuron.value <= 0.25:
-        neuron.master.entity.move_y(-neuron.value * K_VELOCITY)
+        neuron.master.entity.move_y(-(1.0 - 2*neuron.value) * K_VELOCITY)
     elif neuron.value >= 0.75:
-        neuron.master.entity.move_y(neuron.value * K_VELOCITY)
+        neuron.master.entity.move_y((2*neuron.value - 1.0) * K_VELOCITY)
 
-
-move_ne = lambda neuron: (move_n(neuron), move_e(neuron))[0]
-move_nw = lambda neuron: (move_n(neuron), move_w(neuron))[0]
-move_se = lambda neuron: (move_s(neuron), move_e(neuron))[0]
-move_sw = lambda neuron: (move_s(neuron), move_w(neuron))[0]
+_move_ne = lambda neuron: (move_n(neuron), move_e(neuron))[0]
+_move_nw = lambda neuron: (move_n(neuron), move_w(neuron))[0]
+_move_se = lambda neuron: (move_s(neuron), move_e(neuron))[0]
+_move_sw = lambda neuron: (move_s(neuron), move_w(neuron))[0]
 
 def move_fwd(neuron):
     if neuron.value >= 0.5:
-        move_list = [move_n, move_ne, move_e, move_se, move_s, move_sw, move_w, move_nw]
+        move_list = [move_n, _move_ne, move_e, _move_se, move_s, _move_sw, move_w, _move_nw]
         move_list[neuron.master.entity.direction](neuron)
 
 def rotate(neuron):
-    if neuron.value >= 0.25:
+    if 0.3 < neuron.value < 0.7:
+        return
+    if neuron.value <= 0.075:
+        neuron.master.entity.direction = (neuron.master.entity.direction  - 2) % 8
+        return
+    if neuron.value <= 0.3:
         neuron.master.entity.direction = (neuron.master.entity.direction  - 1) % 8
         return
-    if neuron.value <= 0.75:
+    if neuron.value >= 0.925:
+        neuron.master.entity.direction = (neuron.master.entity.direction  + 2) % 8
+        return
+    if neuron.value >= 0.7:
         neuron.master.entity.direction = (neuron.master.entity.direction  + 1) % 8
         return
+    
+def set_freq(neuron):
+    if neuron.value < 0.4:
+        return
+    neuron.master.entity.freq *= np.float_power(1.5,  (neuron.value - 0.7)/0.3)
 
 
 class Neuron:
@@ -159,20 +236,20 @@ class OutputNeuron(Neuron):
 InputNeurons = [
     InputNeuron(None, (0,0), 0.0, null, "0"),
     InputNeuron(None, (0,1), 0.0, llun, "1"),
-    InputNeuron(None, (0,2), 0.0, dist_n, "dist_n"),
-    InputNeuron(None, (0,3), 0.0, dist_s, "dist_s"),
-    InputNeuron(None, (0,4), 0.0, dist_e, "dist_e"),
-    InputNeuron(None, (0,5), 0.0, dist_w, "dist_w"),
-    InputNeuron(None, (0,6), 0.0, dist_fwd, "dist_fwd"),
-    InputNeuron(None, (0,7), 0.0, closest_n, "closest_n"),
-    InputNeuron(None, (0,8), 0.0, closest_s, "closest_s"),
-    InputNeuron(None, (0,9), 0.0, closest_e, "closest_e"),
-    InputNeuron(None, (0,10), 0.0, closest_w, "closest_w"),
-    InputNeuron(None, (0,11), 0.0, closest_fwd, "closest_fwd"),
-    InputNeuron(None, (0,12), 0.0, null, "nearest_dx"),
-    InputNeuron(None, (0,13), 0.0, null, "nearest_dy"),
+    InputNeuron(None, (0,2), 0.0, x, "x"),
+    InputNeuron(None, (0,3), 0.0, y, "y"),
+    InputNeuron(None, (0,4), 0.0, dist_n, "dist_n"),
+    InputNeuron(None, (0,5), 0.0, dist_s, "dist_s"),
+    InputNeuron(None, (0,6), 0.0, dist_e, "dist_e"),
+    InputNeuron(None, (0,7), 0.0, dist_w, "dist_w"),
+    InputNeuron(None, (0,8), 0.0, dist_fwd, "dist_fwd"),
+    InputNeuron(None, (0,9), 0.0, nearest_d, "nearest_d"),
+    InputNeuron(None, (0,10), 0.0, nearest_dx, "nearest_dx"),
+    InputNeuron(None, (0,11), 0.0, nearest_dy, "nearest_dy"),
+    InputNeuron(None, (0,12), 0.0, nearest_fwd, "nearest_fwd"),
+    InputNeuron(None, (0,13), 0.0, elapsed_t, "elapsed_t"),
     InputNeuron(None, (0,14), 0.0, population, "population"),
-    InputNeuron(None, (0,15), 0.0, null, "oscillator")            
+    InputNeuron(None, (0,15), 0.0, oscillator, "oscillator")            
 ]  # 미리 지정한 InputNeuron 들의 list
 OutputNeurons = [
     OutputNeuron(None, (2,0), 0.0, null, "null"), 
@@ -184,6 +261,7 @@ OutputNeurons = [
     OutputNeuron(None, (2,6), 0.0, move_vrt, "move_vrt"), 
     OutputNeuron(None, (2,7), 0.0, move_fwd, "move_fwd"), 
     OutputNeuron(None, (2,8), 0.0, rotate, "rotate"), 
+    OutputNeuron(None, (2,9), 0.0, set_freq, "set_freq"),
 ]
 '''
     OutputNeuron(None, (2,9), 0.0, null), 
@@ -328,6 +406,7 @@ class Entity:
         self.x = x
         self.y = y
         self.direction = 0
+        self.freq = FRAMES_PER_GEN / 12.5
         self.alive = True
 
     def reset(self):  

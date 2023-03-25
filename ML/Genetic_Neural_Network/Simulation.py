@@ -153,7 +153,7 @@ class SimWindow(Frame):
                 entities.append(e)
             entities_dead.clear()
             self.survived.append(surviving_genes)
-            self.master.plot_win.plot_point("pop_1", self.gen-1, len(surviving_genes), 'b')
+            self.master.plot_win.plot_point("surv_rate", self.gen-1, len(surviving_genes), 'b')
             if surviving_genes:
                 rand.shuffle(surviving_genes)
                 i = 0
@@ -252,50 +252,49 @@ class PlotWindow(Frame):
         self.style_dict = self.master.style["plot"]
         self.config(bg=self.style_dict["bg"], highlightbackground=self.style_dict["highlightbackground"],
                     highlightthickness=self.style_dict["highlightthickness"])
+        parameters = {
+            'axes.labelsize': 7,
+            'xtick.labelsize': 5,
+            'ytick.labelsize': 7,
+            'axes.titlesize': 10
+        }
+        plt.rcParams.update(parameters)
 
         self.figure_pop = Figure(figsize=(4, 2), dpi=100)
-
-        self.plot_pop_1 = self.figure_pop.add_subplot(1, 1, 1)
-        self.plot_pop_1.set_title("Population")
-        self.plot_pop_1.set_xlabel("gen")
-        self.plot_pop_1.set_xbound(0, 25)
-        self.plot_pop_1.set_ylim(0, 900)
-
         self.graph_pop = FigureCanvasTkAgg(self.figure_pop, master = self)
+        
+        self.figure_gene = Figure(figsize=(4, 2), dpi=100)
+        self.graph_gene = FigureCanvasTkAgg(self.figure_gene, master = self)
+
+        self.set_plots()
+
         self.graph_pop.draw()
         self.graph_pop.get_tk_widget().place(x=10, y=10)
 
-        self.figure_gene = Figure(figsize=(4, 2), dpi=100)
-
-        self.plot_gene_1 = self.figure_gene.add_subplot(1, 1, 1)
-        self.plot_gene_1.set_title("Gen Pool")
-        self.plot_gene_1.set_xlabel("gen")
-        self.plot_gene_1.set_xlim(0, 100)
-        self.plot_gene_1.plot([100-i for i in range(100)], 'r')
-
-        self.graph_gene = FigureCanvasTkAgg(self.figure_gene, master = self)
         self.graph_gene.draw()
         self.graph_gene.get_tk_widget().place(x=10, y=250)
 
     def set_plots(self):
-        self.plot_pop_1.set_title("Population")
-        self.plot_pop_1.set_xlabel("gen")
-        self.plot_pop_1.set_xbound(0, 25)
-        self.plot_pop_1.set_ylim(0, 900)
+        self.plot_surv_rate = self.figure_pop.add_subplot(1, 1, (1,1))
+        self.plot_surv_rate.set_title("Survival Rate")
+        self.plot_surv_rate.set_xlabel("gen", labelpad=0)
+        self.plot_surv_rate.set_xbound(0, 2)
+        self.plot_surv_rate.set_ybound(0, INITIAL_GEN_POP)
 
-        self.plot_gene_1.set_title("Gen Pool")
+        self.plot_gene_1 = self.figure_gene.add_subplot(1, 1, 1)
+        self.plot_gene_1.set_title("Gene Pool")
         self.plot_gene_1.set_xlabel("gen")
     
     def reset(self):
-        self.plot_pop_1.clear()
-        self.plot_gene_1.clear()
+        self.figure_pop.clear()
+        self.figure_gene.clear()
         self.set_plots()
         self.graph_pop.draw()
         self.graph_gene.draw()
 
     def plot_point(self, plot, x, y, color):
         plot_dict = {
-            "pop_1": (self.graph_pop, self.plot_pop_1),
+            "surv_rate": (self.graph_pop, self.plot_surv_rate),
             "gene_1": (self.graph_gene, self.plot_gene_1)
         }
         plot_dict[plot][1].scatter([x], [y], color=color)
