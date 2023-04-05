@@ -12,7 +12,7 @@ Gene Encoding/Interpreting Rule:
         connection form: (source, sink, weight)
         
         - |type|: type of connection, 1bit
-            0 = input->output, 1 = input->inner, 2 = inner->output, 3 = none (mod 4)
+            0 = input->hidden[0], BRAIN_SIZE = hidden[-1]->output, BRAIN_SIZE+1 = none, else = hidden[i-1]->[i] (mod BRAIN_SIZE+2)
             -> = location index of the connection in Network.connections
             
         - |source|: id of source neuron of the connection, 1bit

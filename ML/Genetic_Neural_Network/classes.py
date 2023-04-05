@@ -2,7 +2,6 @@
 import random as rand
 import numpy as np
 from functools import cache, lru_cache
-import asyncio  # managing coroutines
 import networkx as nx  # generating graphs
 import matplotlib.pyplot as plt  # visualizing graphs
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -251,26 +250,27 @@ InputNeurons = [
     InputNeuron(None, (0,14), 0.0, population, "population"),
     InputNeuron(None, (0,15), 0.0, oscillator, "oscillator")            
 ]  # 미리 지정한 InputNeuron 들의 list
+
 OutputNeurons = [
-    OutputNeuron(None, (2,0), 0.0, null, "null"), 
-    OutputNeuron(None, (2,1), 0.0, move_n, "move_n"), 
-    OutputNeuron(None, (2,2), 0.0, move_s, "move_s"), 
-    OutputNeuron(None, (2,3), 0.0, move_e, "move_e"), 
-    OutputNeuron(None, (2,4), 0.0, move_w, "move_w"), 
-    OutputNeuron(None, (2,5), 0.0, move_hrz, "move_hrz"), 
-    OutputNeuron(None, (2,6), 0.0, move_vrt, "move_vrt"), 
-    OutputNeuron(None, (2,7), 0.0, move_fwd, "move_fwd"), 
-    OutputNeuron(None, (2,8), 0.0, rotate, "rotate"), 
-    OutputNeuron(None, (2,9), 0.0, set_freq, "set_freq"),
+    OutputNeuron(None, (BRAIN_DEPTH + 1,0), 0.0, null, "null"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,1), 0.0, move_n, "move_n"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,2), 0.0, move_s, "move_s"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,3), 0.0, move_e, "move_e"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,4), 0.0, move_w, "move_w"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,5), 0.0, move_hrz, "move_hrz"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,6), 0.0, move_vrt, "move_vrt"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,7), 0.0, move_fwd, "move_fwd"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,8), 0.0, rotate, "rotate"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, set_freq, "set_freq"),
 ]
 '''
-    OutputNeuron(None, (2,9), 0.0, null), 
-    OutputNeuron(None, (2,10), 0.0, null), 
-    OutputNeuron(None, (2,11), 0.0, null), 
-    OutputNeuron(None, (2,12), 0.0, null), 
-    OutputNeuron(None, (2,13), 0.0, null), 
-    OutputNeuron(None, (2,14), 0.0, null), 
-    OutputNeuron(None, (2,15), 0.0, null), '''
+    OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, null), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,10), 0.0, null), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,11), 0.0, null), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,12), 0.0, null), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,13), 0.0, null), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,14), 0.0, null), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,15), 0.0, null), '''
 #] # 미리 지정한 OutputNeuron 들의 list
 
 n_InputN = len(InputNeurons)
@@ -279,59 +279,59 @@ n_OutputN = len(OutputNeurons)
 
 def interp_gene(network): 
     # set up the network using the gene
-    l_c = [[], [], []]
+    l_c = [[] for i in range(BRAIN_DEPTH + 1)]
     d_ip = {}
     d_op = {}
     for n in range(0, BRAIN_SIZE):
         g = network.gene[6 * n: 6 * n + 6]
-        g_t = int(g[0], 16) % 4
-        if g_t == 3:
+        g_t = int(g[0], 16) % (BRAIN_DEPTH + 2)
+
+        if g_t > BRAIN_DEPTH:
             continue
         g_so = int(g[1], 16)
         g_si = int(g[2], 16)
         g_w = MAX_WEIGHT * (float(int(g[3:-1], 16)) - 127.5) / 127.5
+
         if g_t == 0:
+            # input -> hidden[0]
             g_so = g_so % n_InputN
+            g_si = g_si % N_PER_LAYER
+            d_ip[g_so] = 0
+        elif g_t == BRAIN_DEPTH:
+            # hidden[-1] -> output
+            g_so = g_so % N_PER_LAYER
             g_si = g_si % n_OutputN
-            d_ip[g_so] = 0
             d_op[g_si] = 0
-            l_c[0].append((g_so, g_si, g_w))
-        elif g_t == 1:
-            g_so = g_so % n_InputN
-            g_si = g_si % N_INNER
-            d_ip[g_so] = 0
-            l_c[1].append((g_so, g_si, g_w))
         else:
-            g_so = g_so % N_INNER
-            g_si = g_si % n_OutputN
-            d_op[g_si] = 0
-            l_c[2].append((g_so, g_si, g_w))
+            # hidden[i-1] -> hidden[i]
+            g_so = g_so % N_PER_LAYER
+            g_si = g_si % N_PER_LAYER
+        l_c[g_t].append((g_so, g_si, g_w))
+
     for ip in d_ip:
         network.input_neurons.append(InputNeurons[ip].copy(network))
     for op in d_op:
         network.output_neurons.append(OutputNeurons[op].copy(network))
     for conn in l_c[0]:
-        for conn in l_c[0]:
-            network.connections[0].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
-    for conn in l_c[1]:
-        for conn in l_c[1]:
-            network.connections[1].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.inner_neurons[conn[1]], conn[2]))
-    for conn in l_c[2]:
-        for conn in l_c[2]:
-            network.connections[2].append((network.inner_neurons[conn[0]], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
+        network.connections[0].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.inner_neurons[0][conn[1]], conn[2]))
+    for conn in l_c[-1]:
+        network.connections[-1].append((network.inner_neurons[-1][conn[0]], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
+    for l in range(1, BRAIN_DEPTH):
+        for conn in l_c[l]:
+            network.connections[l].append((network.inner_neurons[l-1][conn[0]], network.inner_neurons[l][conn[1]], conn[2]))
 
 
 class Network:
-    def __init__(self, entity, n_inner: int, gene: str):
+    def __init__(self, entity, n_inner: int, n_layers: int , gene: str):
         self.entity = entity
         self.gene = gene
         self.input_neurons = []
         self.output_neurons = []
-        self.inner_neurons = []
-        for i in range(n_inner):
-            self.inner_neurons.append(Neuron(self, (1, i), 0.0, f"innner{i}"))
-        self.connections = [[], [],
-                            []]  # connections[0]: input->output, connections[1]: input->inner, connections[2]: inner->output
+        self.inner_neurons = [[] for i in range(BRAIN_DEPTH)]
+        for l in range(n_layers):
+            for i in range(n_inner):
+                self.inner_neurons[l].append(Neuron(self, (l+1, i), 0.0, f"inner{l}_{i}"))
+        self.connections = [[]] * (BRAIN_DEPTH+1)  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
         # connection = (source, sink, weight)
         interp_gene(self)
         self.color = ""
@@ -340,39 +340,40 @@ class Network:
         # calculate neurons
         for inp in self.input_neurons:
             inp.get_input()
-        for i in (0, 1, 2):
-            conns = self.connections[i]
-            sincs = {}
+        for l in range(BRAIN_DEPTH+1):
+            conns = self.connections[l]
             for conn in conns:
                 conn[1].value += conn[0].value * conn[2]
-                sincs[conn[1]] = 0
-            if i == 0:
-                continue
-            if i == 2:
-                sincs = self.output_neurons
-            for sinc in sincs:
-                sinc.value = sigmoid(sinc.value)
+            if l == BRAIN_DEPTH:
+                for sinc in self.output_neurons:
+                    sinc.value = sigmoid(sinc.value)
+            else:
+                for sinc in self.inner_neurons[l]:
+                    sinc.value = sigmoid(sinc.value)
         # run output
         for out in self.output_neurons:
             out.act()
         # reset neurons
-        for inn in self.inner_neurons:
-            inn.reset()
+        for inns in self.inner_neurons:
+            for inn in inns:
+                inn.reset()
 
     def makeGraph(self):
+        inner_flattened = sum(self.inner_neurons, [])
+        conns_flattened = sum(self.connections, [])
         G = nx.MultiDiGraph()
-        G.add_nodes_from([str(neu.id) for neu in self.input_neurons+self.inner_neurons+self.output_neurons])
-        G.add_edges_from([(str(conn[0].id), str(conn[1].id)) for conn in self.connections[0]+self.connections[1]+self.connections[2]])
+        G.add_nodes_from([str(neu.id) for neu in self.input_neurons+inner_flattened+self.output_neurons])
+        G.add_edges_from([(str(conn[0].id), str(conn[1].id)) for conn in conns_flattened])
         layout = nx.kamada_kawai_layout(G)
         nx.draw_networkx_nodes(G, layout, nodelist=[str(inp.id) for inp in self.input_neurons], node_color="tab:red")
-        nx.draw_networkx_nodes(G, layout, nodelist=[str(inn.id) for inn in self.inner_neurons], node_color="tab:gray")
+        nx.draw_networkx_nodes(G, layout, nodelist=[str(inn.id) for inn in inner_flattened], node_color="tab:gray")
         nx.draw_networkx_nodes(G, layout, nodelist=[str(out.id) for out in self.output_neurons], node_color="tab:blue")
 
-        nx.draw_networkx_edges(G, layout, edgelist=[(str(conn[0].id), str(conn[1].id)) for conn in self.connections[0]+self.connections[1]+self.connections[2]],  arrows=True, arrowstyle="->", edge_color="tab:gray")
+        nx.draw_networkx_edges(G, layout, edgelist=[(str(conn[0].id), str(conn[1].id)) for conn in conns_flattened],  arrows=True, arrowstyle="->", edge_color="tab:gray")
         nx.draw_networkx_labels(G, layout, {str(inp.id): inp.name for inp in self.input_neurons}, font_size=16)
-        nx.draw_networkx_labels(G, layout, {str(inn.id): inn.name for inn in self.inner_neurons}, font_size=16)
+        nx.draw_networkx_labels(G, layout, {str(inn.id): inn.name for inn in inner_flattened}, font_size=16)
         nx.draw_networkx_labels(G, layout, {str(out.id): out.name for out in self.output_neurons}, font_size=16)
-        nx.draw_networkx_edge_labels(G, layout, {(str(conn[0].id), str(conn[1].id)): np.round(conn[2], 3) for conn in self.connections[0]+self.connections[1]+self.connections[2]}, font_size=9)
+        nx.draw_networkx_edge_labels(G, layout, {(str(conn[0].id), str(conn[1].id)): np.round(conn[2], 3) for conn in conns_flattened}, font_size=9)
 
         plt.tight_layout()
         plt.axis("off")
@@ -466,9 +467,17 @@ class Entity:
 
 
 if __name__ == "__main__":
-    net = Network(None, N_INNER, '01a000029fff1029b82b394813579b')
-    net2 = Network(None, N_INNER, '011fff300000300000300000300000')
+    gene1 = (
+        "01a000"
+        "029fff"
+        "1029b8"
+        "2b3948"
+        "13579b"
+        "205111"
+        "04b123"
+    )
+    net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
     # net.run()
-    net.makeGraph()
+    net1.makeGraph()
     print('done')
     # 테스트할 거 있으면

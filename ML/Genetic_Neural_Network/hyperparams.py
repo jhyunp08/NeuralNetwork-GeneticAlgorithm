@@ -1,5 +1,6 @@
-N_INNER = 2  # 은닉층 뉴런 개수
-BRAIN_SIZE = 5  # 최대 connection 개수
+N_PER_LAYER = 2  # 은닉층 뉴런 개수
+BRAIN_SIZE = 7  # 최대 connection 개수
+BRAIN_DEPTH = 2 # hidden layer 개수 < 16 - 1
 P_MUTATION = 0.035  # 변이 확률
 MAX_WEIGHT = 10.0
 
@@ -9,7 +10,7 @@ CANVAS_DIM = 720
 CANVAS_PAD = 30
 SETWIN_WIDTH = 500
 PLOTWIN_HEIGHT = 500
-FRAMES_PER_GEN = 240
+FRAMES_PER_GEN = 200
 INITIAL_GEN_POP = 900
 
 INITIAL_POS = []  # the initial positions at the start of each gen
@@ -30,7 +31,7 @@ WALLS = [
       ((70, 75), (100, 200))
 ]
 
-ms_per_frame = 10
+ms_per_frame = 25
 frameCount = 0
 
 

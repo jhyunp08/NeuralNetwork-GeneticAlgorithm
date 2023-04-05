@@ -2,9 +2,8 @@
 ____________________________________________________
 todo list:
 
-1. output,inputf
-2. Inner_Neuron layers
-3. population graph -> new name
+1. test output,inputf
+2. edit doc
 5. network graph (networkx)
 6. timescale + (other params)
 7. assign hsv from gene

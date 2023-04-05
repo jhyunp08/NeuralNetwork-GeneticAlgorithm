@@ -1,9 +1,17 @@
 # code for the simulation
+from time import time
 from classes import *
-from hyperparams import *
 import platform
 from tkinter import *
 from tkinter import font as tkFont
+import multiprocess as mp
+
+def f(q, ind):
+    for e in entities[225*ind:225*(ind+1)]:
+        e.run()
+        q.put([1])
+tlist = []
+
 
 # using tkmacosx as the current version of tkinter doesn't support displaying button widget with background color in macosx
 if platform.system() == "Darwin":
@@ -25,12 +33,13 @@ def set_default_font():
     def_font = tkFont.nametofont("TkDefaultFont")
     def_font.config(family="Helvetica", size=15)
 
+t0 = 0.0
 
 class Root(Tk):
     def __init__(self):
         # initialize window
         Tk.__init__(self)
-        self.wm_title("hello world?")
+        self.wm_title("Genetic Algorithm")
         self.geometry(f"{CANVAS_DIM + 2*CANVAS_PAD + SETWIN_WIDTH}x{CANVAS_DIM + 2*CANVAS_PAD}")
         self.menu = Menu(self)
         self.config(menu=self.menu)
@@ -96,7 +105,7 @@ class SimWindow(Frame):
     def setUpEnt(self):
         for i in range(INITIAL_GEN_POP):
             e = Entity(0, 0)
-            e.network = Network(e, N_INNER, randGene())
+            e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, randGene())
             entities.append(e)
         for e in entities:
             e.obj = self.canvas.create_oval(e.x-1, e.y-1, e.x+1, e.y+1, fill=self.style_dict["fg"], tags="entity")
@@ -123,8 +132,26 @@ class SimWindow(Frame):
         self.update_()
 
     def run(self):
+        global t0
+        t0 = time()
+        '''
+        q = mp.Queue()
+        processes = []
+        for m in (0, 1, 2, 3):
+            p = mp.Process(target=f, args=(q, m))
+            processes.append(p)
+            p.start()
+        for p in processes:
+            p.join()
+        print(q.get())
+        '''
         for e in entities:
-            e.run() ###
+            e.run()
+        
+        t1 = time()
+        tlist.append(t1-t0)
+        print(t1- t0)
+        t0 = t1
         self.update_()
 
     def loop_frames(self):
@@ -162,7 +189,7 @@ class SimWindow(Frame):
                     i += 1
                 for i in range(INITIAL_GEN_POP):
                     e = entities[i]
-                    e.network = Network(e, N_INNER, new_genes[i])
+                    e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, new_genes[i])
             else:
                 self.pause_simulation()
                 print("Simulation Terminated; No Entities Alive")
@@ -183,6 +210,7 @@ class SimWindow(Frame):
 
     def pause_simulation(self):
         self.running = False
+        print(f'avrge: {sum(tlist)/len(tlist)}')
         self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.restart_simulation))
 
     def reset_simulation(self):
