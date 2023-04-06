@@ -5,12 +5,7 @@ import platform
 from tkinter import *
 from tkinter import font as tkFont
 import multiprocess as mp
-
-def f(q, ind):
-    for e in entities[225*ind:225*(ind+1)]:
-        e.run()
-        q.put([1])
-tlist = []
+from utils import timeit
 
 
 # using tkmacosx as the current version of tkinter doesn't support displaying button widget with background color in macosx
@@ -33,7 +28,6 @@ def set_default_font():
     def_font = tkFont.nametofont("TkDefaultFont")
     def_font.config(family="Helvetica", size=15)
 
-t0 = 0.0
 
 class Root(Tk):
     def __init__(self):
@@ -82,6 +76,8 @@ class SimWindow(Frame):
                              bg=self.style_dict["canvas_bg"], highlightthickness=0)
         self.canvas.place(x=CANVAS_PAD, y=CANVAS_PAD)
 
+        self.update_period = 1.0
+        self.update_count = 0
         self.gen = 0
         self.genCount = Label(self, font=self.master.fonts["gen"], fg=self.style_dict["fg"], bg=self.style_dict["bg"], text="")
         self.genCount.pack(side=TOP)
@@ -131,28 +127,13 @@ class SimWindow(Frame):
             e.x, e.y = INITIAL_POS[i]
         self.update_()
 
+    @timeit
     def run(self):
-        global t0
-        t0 = time()
-        '''
-        q = mp.Queue()
-        processes = []
-        for m in (0, 1, 2, 3):
-            p = mp.Process(target=f, args=(q, m))
-            processes.append(p)
-            p.start()
-        for p in processes:
-            p.join()
-        print(q.get())
-        '''
         for e in entities:
             e.run()
-        
-        t1 = time()
-        tlist.append(t1-t0)
-        print(t1- t0)
-        t0 = t1
-        self.update_()
+        if (self.update_count * 10) % (self.update_period * 10) < 10:
+            self.update_()
+        self.update_count += 1
 
     def loop_frames(self):
         if not self.running:
@@ -210,11 +191,11 @@ class SimWindow(Frame):
 
     def pause_simulation(self):
         self.running = False
-        print(f'avrge: {sum(tlist)/len(tlist)}')
         self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.restart_simulation))
 
     def reset_simulation(self):
         self.running = False
+        self.update_count = 0
         self.after(1, self.resetUp())
         self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.start_simulation))
 
@@ -262,14 +243,19 @@ class SettingWindow(Frame):
 
         self.timeScale = Scale(
             self,
-            from_=0.1,
-            to=15,
-            tickinterval=2,
-            length=400,
+            command=self.set_t_scale,
+            from_=1.0,
+            to=3.0,
+            resolution=0.1,
+            tickinterval=0.5,
+            length=250,
             orient=HORIZONTAL
         )
         self.timeScale.set(1.0)
         self.timeScale.place(x=35, y=130)
+    
+    def set_t_scale(self, t_scale):
+        self.master.sim_win.update_period = float(t_scale)**2.2
 
 
 class PlotWindow(Frame):

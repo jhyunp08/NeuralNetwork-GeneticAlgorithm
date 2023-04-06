@@ -1,7 +1,6 @@
 # main algorithm
 import random as rand
 import numpy as np
-from functools import cache, lru_cache
 import networkx as nx  # generating graphs
 import matplotlib.pyplot as plt  # visualizing graphs
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg

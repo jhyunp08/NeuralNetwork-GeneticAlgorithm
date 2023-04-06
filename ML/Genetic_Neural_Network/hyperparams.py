@@ -1,5 +1,5 @@
 N_PER_LAYER = 2  # 은닉층 뉴런 개수
-BRAIN_SIZE = 7  # 최대 connection 개수
+BRAIN_SIZE = 8  # 최대 connection 개수
 BRAIN_DEPTH = 2 # hidden layer 개수 < 16 - 1
 P_MUTATION = 0.035  # 변이 확률
 MAX_WEIGHT = 10.0
