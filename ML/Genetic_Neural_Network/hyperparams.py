@@ -31,7 +31,7 @@ WALLS = [
       ((70, 75), (100, 200))
 ]
 
-ms_per_frame = 25
+frame_delay_ms = 25
 frameCount = 0
 
 

@@ -146,7 +146,7 @@ class SimWindow(Frame):
             return
         self.run()
         frameCount += 1
-        self.after(ms_per_frame, self.loop_frames)
+        self.after(frame_delay_ms, self.loop_frames)
 
     def newGen(self):
         self.genCount.config(text=f"Gen: {self.gen}")
@@ -255,7 +255,10 @@ class SettingWindow(Frame):
         self.timeScale.place(x=35, y=130)
     
     def set_t_scale(self, t_scale):
-        self.master.sim_win.update_period = float(t_scale)**2.2
+        t_scale = float(t_scale)
+        self.master.sim_win.update_period = t_scale**2.2
+        global frame_delay_ms
+        frame_delay_ms = int(np.round(25/ t_scale))
 
 
 class PlotWindow(Frame):

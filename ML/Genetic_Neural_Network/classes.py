@@ -278,14 +278,14 @@ n_OutputN = len(OutputNeurons)
 
 def interp_gene(network): 
     # set up the network using the gene
-    l_c = [[] for i in range(BRAIN_DEPTH + 1)]
+    l_c = [[] for i in range(BRAIN_DEPTH + 2)]
     d_ip = {}
     d_op = {}
     for n in range(0, BRAIN_SIZE):
         g = network.gene[6 * n: 6 * n + 6]
-        g_t = int(g[0], 16) % (BRAIN_DEPTH + 2)
+        g_t = int(g[0], 16) % (BRAIN_DEPTH + 3)
 
-        if g_t > BRAIN_DEPTH:
+        if g_t > BRAIN_DEPTH + 1:
             continue
         g_so = int(g[1], 16)
         g_si = int(g[2], 16)
@@ -301,6 +301,12 @@ def interp_gene(network):
             g_so = g_so % N_PER_LAYER
             g_si = g_si % n_OutputN
             d_op[g_si] = 0
+        elif g_t == BRAIN_DEPTH + 1:
+            # input -> output
+            g_so = g_so % n_InputN
+            g_si = g_si % n_OutputN
+            d_ip[g_so] = 0
+            d_op[g_si] = 0
         else:
             # hidden[i-1] -> hidden[i]
             g_so = g_so % N_PER_LAYER
@@ -313,8 +319,10 @@ def interp_gene(network):
         network.output_neurons.append(OutputNeurons[op].copy(network))
     for conn in l_c[0]:
         network.connections[0].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.inner_neurons[0][conn[1]], conn[2]))
+    for conn in l_c[-2]:
+        network.connections[-2].append((network.inner_neurons[-1][conn[0]], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
     for conn in l_c[-1]:
-        network.connections[-1].append((network.inner_neurons[-1][conn[0]], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
+        network.connections[-1].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.output_neurons[list(d_op.keys()).index(conn[1])], conn[2]))
     for l in range(1, BRAIN_DEPTH):
         for conn in l_c[l]:
             network.connections[l].append((network.inner_neurons[l-1][conn[0]], network.inner_neurons[l][conn[1]], conn[2]))
@@ -330,7 +338,7 @@ class Network:
         for l in range(n_layers):
             for i in range(n_inner):
                 self.inner_neurons[l].append(Neuron(self, (l+1, i), 0.0, f"inner{l}_{i}"))
-        self.connections = [[]] * (BRAIN_DEPTH+1)  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
+        self.connections = [[]] * (BRAIN_DEPTH+2)  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
         # connection = (source, sink, weight)
         interp_gene(self)
         self.color = ""
@@ -339,11 +347,13 @@ class Network:
         # calculate neurons
         for inp in self.input_neurons:
             inp.get_input()
-        for l in range(BRAIN_DEPTH+1):
+        for l in range(BRAIN_DEPTH+2):
             conns = self.connections[l]
             for conn in conns:
                 conn[1].value += conn[0].value * conn[2]
             if l == BRAIN_DEPTH:
+                pass
+            elif l == BRAIN_DEPTH + 1:
                 for sinc in self.output_neurons:
                     sinc.value = sigmoid(sinc.value)
             else:
@@ -467,13 +477,14 @@ class Entity:
 
 if __name__ == "__main__":
     gene1 = (
-        "01a000"
-        "029fff"
-        "1029b8"
-        "2b3948"
-        "13579b"
-        "205111"
-        "04b123"
+        "030fff"
+        "060100"
+        "070eff"
+        "0b1fda"
+        "120dff"
+        "155001"
+        "245fff"
+        "216fff"
     )
     net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
     # net.run()
