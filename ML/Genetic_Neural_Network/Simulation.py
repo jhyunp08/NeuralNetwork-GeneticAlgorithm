@@ -75,6 +75,7 @@ class SimWindow(Frame):
         self.canvas = Canvas(self, width=self.cget("width") - 2*CANVAS_PAD, height=self.cget("height") - 2*CANVAS_PAD,
                              bg=self.style_dict["canvas_bg"], highlightthickness=0)
         self.canvas.place(x=CANVAS_PAD, y=CANVAS_PAD)
+        self.canvas.bind("<Button-1>", lambda event: self.after(1, self.show_net(event)))
 
         self.update_period = 1.0
         self.update_count = 0
@@ -199,6 +200,15 @@ class SimWindow(Frame):
         self.after(1, self.resetUp())
         self.master.set_win.playpauseButton.config(text="Play", command=lambda: self.master.set_win.after(1, self.start_simulation))
 
+    def show_net(self, event):
+        plot_win = self.master.plot_win
+        display_nets = plot_win.display_nets
+        x, y = event.x, event.y
+        nearest_net = min([(e.network, (abs(e.x - x) + abs(e.y - y)))for e in entities] + [(None, float('inf'))], key=lambda x: x[1])
+        display_nets[0] = display_nets[1]
+        display_nets[1] = nearest_net[0]
+        plot_win.draw_nets()
+
 
 class SettingWindow(Frame):
     def __init__(self, master):
@@ -219,7 +229,7 @@ class SettingWindow(Frame):
             highlightbackground=self.style_dict["bg"],
             command=lambda: self.after(1, self.master.sim_win.start_simulation)
         )
-        self.playpauseButton.place(x=10, y=50)
+        self.playpauseButton.place(x=10, y=20)
         
         self.resetButton = Button(
             self,
@@ -231,7 +241,7 @@ class SettingWindow(Frame):
             highlightbackground=self.style_dict["bg"],
             command=lambda: self.after(1, self.master.sim_win.reset_simulation)
         )
-        self.resetButton.place(x=120, y=50)
+        self.resetButton.place(x=120, y=20)
 
         self.label_timeScale = Label(
             self,
@@ -239,7 +249,7 @@ class SettingWindow(Frame):
             fg=self.style_dict["fg"],
             bg=self.style_dict["bg"]
         )
-        self.label_timeScale.place(x=25, y=100)
+        self.label_timeScale.place(x=20, y=75)
 
         self.timeScale = Scale(
             self,
@@ -252,7 +262,7 @@ class SettingWindow(Frame):
             orient=HORIZONTAL
         )
         self.timeScale.set(1.0)
-        self.timeScale.place(x=35, y=130)
+        self.timeScale.place(x=80, y=60)
     
     def set_t_scale(self, t_scale):
         t_scale = float(t_scale)
@@ -278,36 +288,74 @@ class PlotWindow(Frame):
         plt.rcParams.update(parameters)
 
         self.figure_pop = Figure(figsize=(4, 2), dpi=100)
-        self.graph_pop = FigureCanvasTkAgg(self.figure_pop, master = self)
+        self.graph_pop = FigureCanvasTkAgg(self.figure_pop, master=self)
         
         self.figure_gene = Figure(figsize=(4, 2), dpi=100)
-        self.graph_gene = FigureCanvasTkAgg(self.figure_gene, master = self)
+        self.graph_gene = FigureCanvasTkAgg(self.figure_gene, master=self)
+
+        self.figure_net = Figure(figsize=(4, 1.5), dpi=100)
+        self.graph_net = FigureCanvasTkAgg(self.figure_net, master=self)
 
         self.set_plots()
 
         self.graph_pop.draw()
-        self.graph_pop.get_tk_widget().place(x=10, y=10)
+        self.graph_pop.get_tk_widget().place(x=40, y=10)
 
         self.graph_gene.draw()
-        self.graph_gene.get_tk_widget().place(x=10, y=250)
+        self.graph_gene.get_tk_widget().place(x=40, y=225)
+
+        self.graph_net.draw()
+        self.graph_net.get_tk_widget().place(x=40, y=440)
+
+        self.display_nets = [None, None] # networks to display; [previous, current]
 
     def set_plots(self):
+        loc = plticker.MultipleLocator(base=1)
+
         self.plot_surv_rate = self.figure_pop.add_subplot(1, 1, (1,1))
         self.plot_surv_rate.set_title("Survival Rate")
         self.plot_surv_rate.set_xlabel("gen", labelpad=0)
+        self.plot_surv_rate.set_xlim(left=0)
         self.plot_surv_rate.set_xbound(0, 2)
+        self.plot_surv_rate.set_ylim(bottom=0)
         self.plot_surv_rate.set_ybound(0, INITIAL_GEN_POP)
+        self.plot_surv_rate.xaxis.set_major_locator(loc)
 
         self.plot_gene_1 = self.figure_gene.add_subplot(1, 1, 1)
         self.plot_gene_1.set_title("Gene Pool")
-        self.plot_gene_1.set_xlabel("gen")
+        self.plot_gene_1.set_xlabel("gen", labelpad=0)
+        self.plot_gene_1.set_xlim(left=0)
+        self.plot_gene_1.set_xbound(0, 2)
+        self.plot_gene_1.xaxis.set_major_locator(loc)
+
+        self.plot_net_1 = self.figure_net.add_subplot(1, 2, 1)
+        self.plot_net_1.set_title("")
+        self.plot_net_1.axis("off")
+
+        self.plot_net_2 = self.figure_net.add_subplot(1, 2, 2)
+        self.plot_net_2.set_title("")
+        self.plot_net_2.axis("off")
+    
+    def draw_nets(self):
+        self.plot_net_1.clear()
+        self.plot_net_1.axis("off")
+        self.plot_net_2.clear()
+        self.plot_net_2.axis("off")
+        if self.display_nets[0]:
+            self
+            self.display_nets[0].makeGraph(self.plot_net_1)
+        if self.display_nets[1]:
+            self.display_nets[1].makeGraph(self.plot_net_2)
+        self.figure_net.tight_layout()
+        self.graph_net.draw()
     
     def reset(self):
         self.figure_pop.clear()
         self.figure_gene.clear()
-        self.set_plots()
+        self.figure_net.clear()
         self.graph_pop.draw()
         self.graph_gene.draw()
+        self.graph_net.draw()
 
     def plot_point(self, plot, x, y, color):
         plot_dict = {

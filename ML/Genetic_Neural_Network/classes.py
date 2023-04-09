@@ -2,7 +2,9 @@
 import random as rand
 import numpy as np
 import networkx as nx  # generating graphs
+from networkx.drawing.nx_agraph import graphviz_layout
 import matplotlib.pyplot as plt  # visualizing graphs
+import matplotlib.ticker as plticker
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import PIL  # image processing
@@ -367,26 +369,29 @@ class Network:
             for inn in inns:
                 inn.reset()
 
-    def makeGraph(self):
+    def makeGraph(self, ax):
         inner_flattened = sum(self.inner_neurons, [])
         conns_flattened = sum(self.connections, [])
+
         G = nx.MultiDiGraph()
-        G.add_nodes_from([str(neu.id) for neu in self.input_neurons+inner_flattened+self.output_neurons])
-        G.add_edges_from([(str(conn[0].id), str(conn[1].id)) for conn in conns_flattened])
-        layout = nx.kamada_kawai_layout(G)
-        nx.draw_networkx_nodes(G, layout, nodelist=[str(inp.id) for inp in self.input_neurons], node_color="tab:red")
-        nx.draw_networkx_nodes(G, layout, nodelist=[str(inn.id) for inn in inner_flattened], node_color="tab:gray")
-        nx.draw_networkx_nodes(G, layout, nodelist=[str(out.id) for out in self.output_neurons], node_color="tab:blue")
+        G.add_nodes_from([(str(neu.id), {'layer': neu.id[0]}) for neu in self.input_neurons+inner_flattened+self.output_neurons])
+        G.add_weighted_edges_from([(str(conn[0].id), str(conn[1].id), conn[2]) for conn in conns_flattened])
+        layout = nx.multipartite_layout(G, subset_key="layer")
 
-        nx.draw_networkx_edges(G, layout, edgelist=[(str(conn[0].id), str(conn[1].id)) for conn in conns_flattened],  arrows=True, arrowstyle="->", edge_color="tab:gray")
-        nx.draw_networkx_labels(G, layout, {str(inp.id): inp.name for inp in self.input_neurons}, font_size=16)
-        nx.draw_networkx_labels(G, layout, {str(inn.id): inn.name for inn in inner_flattened}, font_size=16)
-        nx.draw_networkx_labels(G, layout, {str(out.id): out.name for out in self.output_neurons}, font_size=16)
-        nx.draw_networkx_edge_labels(G, layout, {(str(conn[0].id), str(conn[1].id)): np.round(conn[2], 3) for conn in conns_flattened}, font_size=9)
+        inp_color_map = ["#073763"]*2 + ["#2917ff"]*2 + ["#0066ff"]*5 + ["#4b46f0"]*4 + ["#245887"]*2 + ["#14868d"]
+        out_color_map = ["#9e5050"] + ["#d52c2c"]*4 + ["#f55050"]*2 + ["#cc0011"] + ["#eb572d"] + ["#c82157"]
 
-        plt.tight_layout()
-        plt.axis("off")
-        plt.show()
+        nx.draw_networkx_nodes(G, layout, nodelist=[str(inp.id) for inp in self.input_neurons], node_color=[inp_color_map[inp.id[1]] for inp in self.input_neurons], alpha=0.9, ax=ax)
+        nx.draw_networkx_nodes(G, layout, nodelist=[str(inn.id) for inn in inner_flattened], node_color="tab:gray", alpha=0.8, ax=ax)
+        nx.draw_networkx_nodes(G, layout, nodelist=[str(out.id) for out in self.output_neurons], node_color=[out_color_map[out.id[1]] for out in self.output_neurons], alpha=1.0, ax=ax)
+
+        nx.draw_networkx_edges(G, layout, edgelist=[(str(conn[0].id), str(conn[1].id)) for conn in conns_flattened],  arrows=True, arrowstyle="->", edge_color="tab:gray", ax=ax)
+        nx.draw_networkx_labels(G, layout, {str(inp.id): inp.name for inp in self.input_neurons}, font_size=7, ax=ax)
+        nx.draw_networkx_labels(G, layout, {str(inn.id): inn.name for inn in inner_flattened}, font_size=7, ax=ax)
+        nx.draw_networkx_labels(G, layout, {str(out.id): out.name for out in self.output_neurons}, font_size=7, ax=ax)
+        nx.draw_networkx_edge_labels(G, layout, {(str(conn[0].id), str(conn[1].id)): np.round(conn[2], 3) for conn in conns_flattened}, font_size=3, ax=ax)
+
+        return G
 
     def printGene(self):
         print(self.gene)
@@ -477,7 +482,7 @@ class Entity:
 
 if __name__ == "__main__":
     gene1 = (
-        "030fff"
+        "020fff"
         "060100"
         "070eff"
         "0b1fda"
@@ -486,8 +491,22 @@ if __name__ == "__main__":
         "245fff"
         "216fff"
     )
+    
+    gene1 = ""
+    for i in range(8):
+        gene1 += f"20" + hex(8+i)[2:]+ "000"
+    
     net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
     # net.run()
-    net1.makeGraph()
+    fig = plt.figure(figsize=(4,2), dpi=200)
+    ax = fig.add_subplot(1, 1, (1,1))
+    net1.makeGraph(ax)
+    
+    ax.axis("off")
+    ax.set_title("net1")
+    fig.tight_layout()
+    fig.canvas.draw()
+    plt.show()
+    
     print('done')
     # 테스트할 거 있으면
