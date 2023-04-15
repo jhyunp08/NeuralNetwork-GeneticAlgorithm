@@ -1,3 +1,5 @@
+import numpy as np
+
 N_PER_LAYER = 3  # 은닉층 뉴런 개수
 BRAIN_SIZE = 12  # 최대 connection 개수
 BRAIN_DEPTH = 2 # hidden layer 개수 < 16 - 1
@@ -14,9 +16,8 @@ FRAMES_PER_GEN = 250
 INITIAL_GEN_POP = 900
 
 INITIAL_POS = []  # the initial positions at the start of each gen
-for i in range(30):
-        for j in range(30):
-            INITIAL_POS.append((75.0+i*19.0, 22.5+j*22.5))
+for i in range(INITIAL_GEN_POP):
+      INITIAL_POS.append((min(CANVAS_DIM, max(0, np.random.normal(CANVAS_DIM/2, 70))), min(CANVAS_DIM, max(0, np.random.normal(CANVAS_DIM/2, 70)))))
 GOAL_ZONE = [
       ((0, 72), (200, 520)), 
       ((648, 720), (200, 520))
@@ -28,8 +29,8 @@ DEAD_ZONE = [
       ((648, 720), (620, 720))
 ]
 WALLS = [
-      ((70, 75), (100, 200)),
-      ((650, 645), (620, 520))
+      ((180, 540), (180, 190)),
+      ((180, 540), (530, 540)),
 ]
 
 frame_delay_ms = 25

@@ -14,6 +14,9 @@ from hyperparams import *
 def sigmoid(x: float) -> float:
     return 1 / (1 + np.exp(-x))
 
+def sigmoid_np(x: float) -> float:
+    return 2*sigmoid(x)-1
+
 def sigmoid_prime(x: float, m: float) -> float:
     return sigmoid(x-m)
 
@@ -134,19 +137,19 @@ def oscillator(entity) -> float:
 
 
 def move_n(neuron):
-    if neuron.value > 0.5:
+    if neuron.value >= 0.6:
         neuron.master.entity.move_y(-neuron.value * K_VELOCITY)
 
 def move_s(neuron):
-    if neuron.value > 0.5:
+    if neuron.value >= 0.6:
         neuron.master.entity.move_y(neuron.value * K_VELOCITY)
 
 def move_e(neuron):
-    if neuron.value > 0.5:
+    if neuron.value >= 0.6:
         neuron.master.entity.move_x(neuron.value * K_VELOCITY)
 
 def move_w(neuron):
-    if neuron.value > 0.5:
+    if neuron.value >= 0.6:
         neuron.master.entity.move_x(-neuron.value * K_VELOCITY)
 
 def move_hrz(neuron):
@@ -167,7 +170,7 @@ _move_se = lambda neuron: (move_s(neuron), move_e(neuron))[0]
 _move_sw = lambda neuron: (move_s(neuron), move_w(neuron))[0]
 
 def move_fwd(neuron):
-    if neuron.value > 0.5:
+    if neuron.value >= 0.6:
         move_list = [move_n, _move_ne, move_e, _move_se, move_s, _move_sw, move_w, _move_nw]
         move_list[neuron.master.entity.direction](neuron)
 
@@ -366,11 +369,8 @@ class Network:
             elif l == BRAIN_DEPTH + 1:
                 pass
             else:
-                pass
-                '''
                 for sinc in sincs:
-                    sinc.value = sigmoid(sinc.value)
-                '''
+                    sinc.value = sigmoid_np(sinc.value)
         # run output
         for out in self.output_neurons:
             out.value = sigmoid(out.value)

@@ -375,6 +375,7 @@ class PlotWindow(Frame):
         self.figure_pop.clear()
         self.figure_gene.clear()
         self.figure_net.clear()
+        self.set_plots()
         self.graph_pop.draw()
         self.graph_gene.draw()
         self.graph_net.draw()
