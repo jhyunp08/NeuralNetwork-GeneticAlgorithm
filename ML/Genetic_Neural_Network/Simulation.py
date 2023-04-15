@@ -40,7 +40,8 @@ class Root(Tk):
         self.createMenu()
 
         self.style = {
-            "sim": {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white",
+            "sim": {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white", 
+                    "progess_bg": "gray13", "progess_fg": "#5aff39",
                     "goal": "#07c142", "dead": "#b33535", "wall": "gray"},
             "set": {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2,
                     "fg": "white", "pbut_bg": "gray", "rbut_bg": "gray17"},
@@ -72,10 +73,16 @@ class SimWindow(Frame):
         self.style_dict = self.master.style["sim"]
         self.config(bg=self.style_dict["bg"])
 
-        self.canvas = Canvas(self, width=self.cget("width") - 2*CANVAS_PAD, height=self.cget("height") - 2*CANVAS_PAD,
+        self.canvas = Canvas(self, width=CANVAS_DIM, height=CANVAS_DIM,
                              bg=self.style_dict["canvas_bg"], highlightthickness=0)
         self.canvas.place(x=CANVAS_PAD, y=CANVAS_PAD)
         self.canvas.bind("<Button-1>", lambda event: self.after(1, self.show_net(event)))
+
+        self.progressBar = Canvas(self, width=CANVAS_DIM, height=CANVAS_PAD - 15,
+                             bg=self.style_dict["progess_bg"], highlightbackground=self.style_dict["progess_fg"], highlightthickness=1)
+        self.progessRect = self.progressBar.create_rectangle(-CANVAS_DIM, 0, 0, CANVAS_PAD - 15,
+                                                              fill=self.style_dict["progess_fg"], outline=self.style_dict["progess_bg"])
+        self.progressBar.place(x=CANVAS_PAD, y=CANVAS_DIM+CANVAS_PAD+5)
 
         self.update_period = 1.0
         self.update_count = 0
@@ -121,6 +128,7 @@ class SimWindow(Frame):
         for e in entities:
             self.canvas.moveto(e.obj, e.x-1, e.y-1)
         self.update()
+        self.progressBar.moveto(self.progessRect, CANVAS_DIM*(frameCount/FRAMES_PER_GEN - 1), 0)
 
     def place_entities(self):
         rand.shuffle(entities)
@@ -128,7 +136,7 @@ class SimWindow(Frame):
             e.x, e.y = INITIAL_POS[i]
         self.update_()
 
-    @timeit
+    # @timeit
     def run(self):
         for e in entities:
             e.run()
@@ -208,6 +216,7 @@ class SimWindow(Frame):
         display_nets[0] = display_nets[1]
         display_nets[1] = nearest_net[0]
         plot_win.draw_nets()
+        nearest_net[0].printGene()
 
 
 class SettingWindow(Frame):
@@ -263,12 +272,27 @@ class SettingWindow(Frame):
         )
         self.timeScale.set(1.0)
         self.timeScale.place(x=80, y=60)
+
+        self.saveButton = Button(
+            self,
+            text="save",
+            width=90,
+            height=25,
+            fg=self.style_dict["fg"],
+            bg=self.style_dict["rbut_bg"],
+            highlightbackground=self.style_dict["bg"],
+            command=self.save_figure
+        )
+        self.saveButton.place(x=240, y=20)
     
     def set_t_scale(self, t_scale):
         t_scale = float(t_scale)
         self.master.sim_win.update_period = t_scale**2.2
         global frame_delay_ms
         frame_delay_ms = int(np.round(25/ t_scale))
+
+    def save_figure(self):
+        self.after(1, self.master.plot_win.save_figure("fig1.png"))
 
 
 class PlotWindow(Frame):
@@ -310,23 +334,21 @@ class PlotWindow(Frame):
         self.display_nets = [None, None] # networks to display; [previous, current]
 
     def set_plots(self):
-        loc = plticker.MultipleLocator(base=1)
+        locx_surv = plticker.MultipleLocator(1)
+        locx_gene1 = plticker.MultipleLocator(1)
 
         self.plot_surv_rate = self.figure_pop.add_subplot(1, 1, (1,1))
         self.plot_surv_rate.set_title("Survival Rate")
         self.plot_surv_rate.set_xlabel("gen", labelpad=0)
-        self.plot_surv_rate.set_xlim(left=0)
         self.plot_surv_rate.set_xbound(0, 2)
-        self.plot_surv_rate.set_ylim(bottom=0)
         self.plot_surv_rate.set_ybound(0, INITIAL_GEN_POP)
-        self.plot_surv_rate.xaxis.set_major_locator(loc)
+        self.plot_surv_rate.xaxis.set_major_locator(locx_surv)
 
         self.plot_gene_1 = self.figure_gene.add_subplot(1, 1, 1)
         self.plot_gene_1.set_title("Gene Pool")
         self.plot_gene_1.set_xlabel("gen", labelpad=0)
-        self.plot_gene_1.set_xlim(left=0)
         self.plot_gene_1.set_xbound(0, 2)
-        self.plot_gene_1.xaxis.set_major_locator(loc)
+        self.plot_gene_1.xaxis.set_major_locator(locx_gene1)
 
         self.plot_net_1 = self.figure_net.add_subplot(1, 2, 1)
         self.plot_net_1.set_title("")
@@ -364,6 +386,9 @@ class PlotWindow(Frame):
         }
         plot_dict[plot][1].scatter([x], [y], color=color)
         plot_dict[plot][0].draw()
+
+    def save_figure(self, filepath):
+        self.figure_pop.savefig(filepath, dpi=100)
 
 
 if __name__ == "__main__":
