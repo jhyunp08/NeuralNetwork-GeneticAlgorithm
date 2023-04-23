@@ -9,6 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import PIL  # image processing
 from hyperparams import *
+from utils import HSL2RGB
 
 
 def sigmoid(x: float) -> float:
@@ -286,6 +287,7 @@ def interp_gene(network):
     l_c = [[] for i in range(BRAIN_DEPTH + 2)]
     d_ip = {}
     d_op = {}
+
     for n in range(0, BRAIN_SIZE):
         g = network.gene[6 * n: 6 * n + 6]
         g_t = int(g[0], 16) % (BRAIN_DEPTH + 3)
@@ -300,12 +302,18 @@ def interp_gene(network):
             # input -> hidden[0]
             g_so = g_so % n_InputN
             g_si = g_si % N_PER_LAYER
-            d_ip[g_so] = 0
+            if g_so in d_ip:
+                d_ip[g_so] += 1
+            else:
+                d_ip[g_so] = 1
         elif g_t == BRAIN_DEPTH:
             # hidden[-1] -> output
             g_so = g_so % N_PER_LAYER
             g_si = g_si % n_OutputN
-            d_op[g_si] = 0
+            if g_si in d_op:
+                d_op[g_si] += 1
+            else:
+                d_op[g_si] = 1
         elif g_t == BRAIN_DEPTH + 1:
             # hidden[0] -> [1]
             g_t = 1
@@ -315,8 +323,14 @@ def interp_gene(network):
             # input -> output
             g_so = g_so % n_InputN
             g_si = g_si % n_OutputN
-            d_ip[g_so] = 0
-            d_op[g_si] = 0
+            if g_so in d_ip:
+                d_ip[g_so] += 1
+            else:
+                d_ip[g_so] = 1
+            if g_si in d_op:
+                d_op[g_si] += 1
+            else:
+                d_op[g_si] = 1
             '''
         else:
             # hidden[i-1] -> hidden[i]
@@ -328,6 +342,7 @@ def interp_gene(network):
         network.input_neurons.append(InputNeurons[ip].copy(network))
     for op in d_op:
         network.output_neurons.append(OutputNeurons[op].copy(network))
+
     for conn in l_c[0]:
         network.connections[0].append((network.input_neurons[list(d_ip.keys()).index(conn[0])], network.inner_neurons[0][conn[1]], conn[2]))
     for conn in l_c[-2]:
@@ -338,11 +353,33 @@ def interp_gene(network):
         for conn in l_c[l]:
             network.connections[l].append((network.inner_neurons[l-1][conn[0]], network.inner_neurons[l][conn[1]], conn[2]))
 
+    sum_ip = sum(d_ip.values())
+    if sum_ip:
+        m_cos = np.divide(sum(d_ip[ip] * np.cos(ip * 2*PI / n_InputN) for ip in d_ip), sum_ip)
+        m_sin = sum(d_ip[ip] * np.sin(ip * 2*PI / n_InputN) for ip in d_ip) / sum_ip
+        if m_cos == 0:
+            h = 0
+            s = 0
+        else:
+            if m_cos > 0:
+                h = np.rad2deg(np.arctan(m_sin/m_cos))
+            else:
+                h = np.rad2deg(np.arctan(m_sin/m_cos) + PI)
+            h = h % 360
+            s = max(0.3 + 0.7*(sum(len(l) for l in l_c[1:-2]) / BRAIN_SIZE), 0.4)
+        l = max(0.95 * ((len(d_ip)+len(d_op)) / (n_InputN+n_OutputN) + 1.0)/2.0, 0.57)
+    else:
+        h = 0
+        s = 0
+        l = 0.53
+    network.color = HSL2RGB(h, s, l)
+
 
 class Network:
     def __init__(self, entity, n_inner: int, n_layers: int , gene: str):
         self.entity = entity
         self.gene = gene
+
         self.input_neurons = []
         self.output_neurons = []
         self.inner_neurons = [[] for i in range(BRAIN_DEPTH)]
@@ -351,8 +388,8 @@ class Network:
                 self.inner_neurons[l].append(Neuron(self, (l+1, i), 0.0, f"inner{l}_{i}"))
         self.connections = [[]] * (BRAIN_DEPTH+2)  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
         # connection = (source, sink, weight)
-        interp_gene(self)
         self.color = ""
+        interp_gene(self)
 
     def run(self):
         # calculate neurons
@@ -509,16 +546,7 @@ class Entity:
 
 if __name__ == "__main__":
     print(randGene())
-    gene1 = (
-        "000000"
-        "110111"
-        "220222"
-        "330333"
-        "440444"
-        "440555"
-        "440555"
-        "440555"
-    )
+    gene1 = "4a673b062e837c37c6bc5b03c337f3cc62e21d772b370d4e81fbf4f948d5011eb1aef181"
     '''
     gene1 = ""
     for i in range(8):
@@ -537,4 +565,5 @@ if __name__ == "__main__":
     plt.show()
     
     print('done')
+    print(net1.color)
     # 테스트할 거 있으면

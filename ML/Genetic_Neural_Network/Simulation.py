@@ -40,9 +40,9 @@ class Root(Tk):
         self.createMenu()
 
         self.style = {
-            "sim": {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "white", 
+            "sim": {"bg": "gray20", "fg": "#bbdbef", "canvas_bg": "gray6", "canvas_fg": "#d9e9fb", 
                     "progess_bg": "gray13", "progess_fg": "#5aff39",
-                    "goal": "#07c142", "dead": "#b33535", "wall": "gray"},
+                    "goal": "#2baf51", "dead": "#a84b4b", "wall": "gray"},
             "set": {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2,
                     "fg": "white", "pbut_bg": "gray", "rbut_bg": "gray17"},
             "plot": {"bg": "gray15", "highlightbackground": "#404040", "highlightthickness": 2, "fg": "white"}
@@ -112,7 +112,7 @@ class SimWindow(Frame):
             e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, randGene())
             entities.append(e)
         for e in entities:
-            e.obj = self.canvas.create_oval(e.x-1, e.y-1, e.x+1, e.y+1, fill=self.style_dict["fg"], tags="entity")
+            e.obj = self.canvas.create_oval(e.x-1, e.y-1, e.x+1, e.y+1, fill=self.style_dict["canvas_fg"], outline=e.network.color, tags="entity")
 
     def resetUp(self):
         self.gen = 0
@@ -180,6 +180,7 @@ class SimWindow(Frame):
                 for i in range(INITIAL_GEN_POP):
                     e = entities[i]
                     e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, new_genes[i])
+                    self.canvas.itemconfig(e.obj, outline=e.network.color)
             else:
                 self.pause_simulation()
                 print("Simulation Terminated; No Entities Alive")
