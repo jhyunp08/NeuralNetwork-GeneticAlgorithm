@@ -6,6 +6,7 @@ from tkinter import *
 from tkinter import font as tkFont
 import multiprocess as mp
 from utils import timeit
+from colorPath import minimize_color_difference
 
 
 # using tkmacosx as the current version of tkinter doesn't support displaying button widget with background color in macosx
@@ -172,6 +173,7 @@ class SimWindow(Frame):
             self.survived.append(surviving_genes)
             self.master.plot_win.plot_point("surv_rate", self.gen-1, len(surviving_genes), 'b')
             if surviving_genes:
+                colors = []
                 rand.shuffle(surviving_genes)
                 i = 0
                 while i < INITIAL_GEN_POP:
@@ -181,10 +183,24 @@ class SimWindow(Frame):
                     e = entities[i]
                     e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, new_genes[i])
                     self.canvas.itemconfig(e.obj, outline=e.network.color)
+                    colors.append(e.network.color)
+                    
+                sample_colors = rand.sample(colors, 40)
+                for i, color in enumerate(sample_colors):
+                    self.after(1, self.master.plot_win.plot_point("gene_1", self.gen, i, color))
             else:
                 self.pause_simulation()
-                print("Simulation Terminated; No Entities Alive")
+                print("Simulation Terminated: No Entities Alive")
                 return
+        else:
+            colors = []
+            for e in entities:
+                colors.append(e.network.color)
+            sample_colors = rand.sample(colors, 50)
+            sample_colors = minimize_color_difference(sample_colors, "#hex")
+            for i, color in enumerate(sample_colors):
+                self.master.plot_win.plot_point("gene_1", self.gen, i, color)
+
         self.place_entities()
         self.loop_frames()
     
@@ -293,7 +309,7 @@ class SettingWindow(Frame):
         frame_delay_ms = int(np.round(25/ t_scale))
 
     def save_figure(self):
-        self.after(1, self.master.plot_win.save_figure("fig1.png"))
+        self.after(1, self.master.plot_win.save_figure(("fig_p.png", "fig_g.png", "fig_n.png")))
 
 
 class PlotWindow(Frame):
@@ -389,8 +405,10 @@ class PlotWindow(Frame):
         plot_dict[plot][1].scatter([x], [y], color=color)
         plot_dict[plot][0].draw()
 
-    def save_figure(self, filepath):
-        self.figure_pop.savefig(filepath, dpi=100)
+    def save_figure(self, filepaths):
+        self.figure_pop.savefig(filepaths[0], dpi=100)
+        self.figure_gene.savefig(filepaths[1], dpi=100)
+        self.figure_net.savefig(filepaths[2], dpi=100)
 
 
 if __name__ == "__main__":

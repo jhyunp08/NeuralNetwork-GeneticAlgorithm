@@ -4,7 +4,7 @@ PI = np.pi
 N_PER_LAYER = 3  # 은닉층 뉴런 개수
 BRAIN_SIZE = 12  # 최대 connection 개수
 BRAIN_DEPTH = 2 # hidden layer 개수 < 16 - 1
-P_MUTATION = 0.035  # 변이 확률
+P_MUTATION = 0.04  # 변이 확률
 MAX_WEIGHT = 10.0
 
 K_VELOCITY = 1.2

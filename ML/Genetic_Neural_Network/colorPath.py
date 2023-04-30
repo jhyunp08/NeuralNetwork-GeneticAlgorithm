@@ -40,7 +40,7 @@ def dijkstra(graph, start):
     
     return distances
 
-def minimize_color_difference(colors, color_difference=delta_e_cie2000):
+def minimize_color_difference(colors, type="sRGB", color_difference=delta_e_cie2000):
     dict_delta_es = {"deltaecie1976": delta_e_cie1976, 
                      "1976": delta_e_cie1976, 
                      "cie1976": delta_e_cie1976, 
@@ -55,6 +55,9 @@ def minimize_color_difference(colors, color_difference=delta_e_cie2000):
                      }
     if isinstance(color_difference, str):
         color_difference = dict_delta_es[color_difference.lower().replace(' ','').replace('_','')]
+    if type.lower() == "#hex":
+        for i, hexcolor in enumerate(colors):
+            colors[i] = (int(hexcolor[1:3], 16)/255.0, int(hexcolor[3:5], 16)/255.0, int(hexcolor[5:], 16)/255.0)
     colors_cielab = [convert_color(sRGBColor(*color), LabColor) for color in colors]
     graph = build_color_graph(colors_cielab, color_difference)
     start = 0
@@ -77,10 +80,10 @@ if __name__ == "__main__":
     N = 100
     colors = [(random.random(), random.random(), random.random()) for i in range(N)]
 
-    minimized_colors1 = minimize_color_difference(colors, delta_e_cie1976)
-    minimized_colors2 = minimize_color_difference(colors, delta_e_cie1994)
-    minimized_colors3 = minimize_color_difference(colors, delta_e_cie2000)
-    minimized_colors4 = minimize_color_difference(colors, delta_e_cmc)
+    minimized_colors1 = minimize_color_difference(colors, "sRGB" ,delta_e_cie1976)
+    minimized_colors2 = minimize_color_difference(colors, "sRGB" ,delta_e_cie1994)
+    minimized_colors3 = minimize_color_difference(colors, "sRGB", delta_e_cie2000)
+    minimized_colors4 = minimize_color_difference(colors, "sRGB", delta_e_cmc)
 
     x0 = [0 for i in range(N)]
     x1 = [1 for i in range(N)]

@@ -1,6 +1,6 @@
 from functools import wraps, cache, lru_cache
 import time
-import math
+import numpy as np
 
 def timeit(func):
     @wraps(func)
@@ -31,9 +31,9 @@ def HSL2RGB(H, S, L, asHex=True):
 
     R, G, B = (R1 + m , G1 + m, B1 + m)
     if asHex:
-        R = int(R * 255)
-        G = int(G * 255)
-        B = int(B * 255)
-        return f'#{(format(R, "2x")+format(G, "2x")+format(B, "2x")).replace(" ", "0")}'
+        R = int(np.round(R * 255))
+        G = int(np.round(G * 255))
+        B = int(np.round(B * 255))
+        return f'#{format(R, "02x")}{format(G, "02x")}{format(B, "02x")}'
     else:
         return (R, G, B)
