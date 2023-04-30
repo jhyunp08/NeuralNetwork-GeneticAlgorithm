@@ -175,10 +175,11 @@ class SimWindow(Frame):
             if surviving_genes:
                 colors = []
                 rand.shuffle(surviving_genes)
-                i = 0
-                while i < INITIAL_GEN_POP:
-                    new_genes.append(mutateGene(surviving_genes[i % len(surviving_genes)]))
-                    i += 1
+                for i in range(INITIAL_GEN_POP):
+                    if i < 20:
+                        new_genes.append(randGene())
+                    else:
+                        new_genes.append(mutateGene(surviving_genes[i % len(surviving_genes)]))
                 for i in range(INITIAL_GEN_POP):
                     e = entities[i]
                     e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, new_genes[i])
@@ -196,7 +197,7 @@ class SimWindow(Frame):
             colors = []
             for e in entities:
                 colors.append(e.network.color)
-            sample_colors = rand.sample(colors, 50)
+            sample_colors = rand.sample(colors, 40)
             sample_colors = minimize_color_difference(sample_colors, "#hex")
             for i, color in enumerate(sample_colors):
                 self.master.plot_win.plot_point("gene_1", self.gen, i, color)
