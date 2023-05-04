@@ -6,7 +6,7 @@ Gene Encoding/Interpreting Rule:
     * composed of #{Brain_size} connections
     
     * Connection:
-        * one connection -> 6bit hexdeciaml str
+        * one connection -> 5bit hexdecimal str
         
         gene form: | type | source | sink | weight |
         connection form: (source, sink, weight)
@@ -23,8 +23,8 @@ Gene Encoding/Interpreting Rule:
             for inner/output, index of the neuron at {InnerNeurons}/{OutputNeurons}
             -> {sink} = index of sink in Network.Input/Output/InnerNeurons
             
-        - |weight|: weight of the connection, 3bit
-            -> {weight} = 10 x (weight-127.5)/127.5 (in range[-15, 15))
+        - |weight|: weight of the connection, 2bit
+            -> {weight} = 10 x (weight-127.5)/127.5 (in range[-10, 10])
             
 
 

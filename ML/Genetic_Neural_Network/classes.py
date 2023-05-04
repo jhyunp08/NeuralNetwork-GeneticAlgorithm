@@ -4,15 +4,15 @@ import numpy as np
 import networkx as nx  # generating graphs
 from networkx.drawing.nx_agraph import graphviz_layout
 import matplotlib.pyplot as plt  # visualizing graphs
-import matplotlib.ticker as plticker
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
 import PIL  # image processing
 from hyperparams import *
-from utils import HSL2RGB
+from utils import HSL2RGB, timeit
+import cProfile
 
 
 def sigmoid(x: float) -> float:
+    if abs(x) > 500:
+        print(x)
     return 1 / (1 + np.exp(-x))
 
 def sigmoid_np(x: float) -> float:
@@ -138,31 +138,31 @@ def oscillator(entity) -> float:
 
 
 def move_n(neuron):
-    if neuron.value >= 0.6:
+    if neuron.value >= 0.25:
         neuron.master.entity.move_y(-neuron.value * K_VELOCITY)
 
 def move_s(neuron):
-    if neuron.value >= 0.6:
+    if neuron.value >= 0.25:
         neuron.master.entity.move_y(neuron.value * K_VELOCITY)
 
 def move_e(neuron):
-    if neuron.value >= 0.6:
+    if neuron.value >= 0.25:
         neuron.master.entity.move_x(neuron.value * K_VELOCITY)
 
 def move_w(neuron):
-    if neuron.value >= 0.6:
+    if neuron.value >= 0.25:
         neuron.master.entity.move_x(-neuron.value * K_VELOCITY)
 
 def move_hrz(neuron):
-    if neuron.value <= 0.25:
+    if neuron.value <= -0.25:
         neuron.master.entity.move_x(-(1.0 - 2*neuron.value) * K_VELOCITY)
-    elif neuron.value >= 0.75:
+    elif neuron.value >= 0.25:
         neuron.master.entity.move_x((2*neuron.value - 1.0) * K_VELOCITY)
 
 def move_vrt(neuron):
-    if neuron.value <= 0.25:
+    if neuron.value <= -0.25:
         neuron.master.entity.move_y(-(1.0 - 2*neuron.value) * K_VELOCITY)
-    elif neuron.value >= 0.75:
+    elif neuron.value >= 0.25:
         neuron.master.entity.move_y((2*neuron.value - 1.0) * K_VELOCITY)
 
 _move_ne = lambda neuron: (move_n(neuron), move_e(neuron))[0]
@@ -171,28 +171,28 @@ _move_se = lambda neuron: (move_s(neuron), move_e(neuron))[0]
 _move_sw = lambda neuron: (move_s(neuron), move_w(neuron))[0]
 
 def move_fwd(neuron):
-    if neuron.value >= 0.6:
+    if neuron.value >= 0.25:
         move_list = [move_n, _move_ne, move_e, _move_se, move_s, _move_sw, move_w, _move_nw]
         move_list[neuron.master.entity.direction](neuron)
 
 def rotate(neuron):
-    if 0.3 < neuron.value < 0.7:
+    if -0.4 < neuron.value < 0.4:
         return
-    if neuron.value <= 0.075:
+    if neuron.value <= -0.85:
         neuron.master.entity.direction = (neuron.master.entity.direction  - 2) % 8
         return
-    if neuron.value <= 0.3:
+    if neuron.value <= -0.4:
         neuron.master.entity.direction = (neuron.master.entity.direction  - 1) % 8
         return
-    if neuron.value >= 0.925:
+    if neuron.value >= 0.85:
         neuron.master.entity.direction = (neuron.master.entity.direction  + 2) % 8
         return
-    if neuron.value >= 0.7:
+    if neuron.value >= 0.4:
         neuron.master.entity.direction = (neuron.master.entity.direction  + 1) % 8
         return
     
 def set_freq(neuron):
-    if neuron.value < 0.4:
+    if neuron.value < 0.2:
         return
     neuron.master.entity.freq *= np.float_power(1.5,  (neuron.value - 0.7)/0.3)
 
@@ -238,8 +238,8 @@ class OutputNeuron(Neuron):
 
 
 InputNeurons = [
-    InputNeuron(None, (0,0), 0.0, null, "0"),
-    InputNeuron(None, (0,1), 0.0, llun, "1"),
+    # InputNeuron(None, (0,0), 0.0, null, "0"),
+    # InputNeuron(None, (0,1), 0.0, llun, "1"),
     InputNeuron(None, (0,2), 0.0, x, "x"),
     InputNeuron(None, (0,3), 0.0, y, "y"),
     InputNeuron(None, (0,4), 0.0, dist_n, "dist_n"),
@@ -247,6 +247,8 @@ InputNeurons = [
     InputNeuron(None, (0,6), 0.0, dist_e, "dist_e"),
     InputNeuron(None, (0,7), 0.0, dist_w, "dist_w"),
     InputNeuron(None, (0,8), 0.0, dist_fwd, "dist_fwd"),
+]
+'''
     InputNeuron(None, (0,9), 0.0, nearest_d, "nearest_d"),
     InputNeuron(None, (0,10), 0.0, nearest_dx, "nearest_dx"),
     InputNeuron(None, (0,11), 0.0, nearest_dy, "nearest_dy"),
@@ -254,33 +256,32 @@ InputNeurons = [
     InputNeuron(None, (0,13), 0.0, elapsed_t, "elapsed_t"),
     InputNeuron(None, (0,14), 0.0, population, "population"),
     InputNeuron(None, (0,15), 0.0, oscillator, "oscillator")            
-]  # 미리 지정한 InputNeuron 들의 list
+]'''  # 미리 지정한 InputNeuron 들의 list
 
 OutputNeurons = [
-    OutputNeuron(None, (BRAIN_DEPTH + 1,0), 0.0, null, "null"), 
+    # OutputNeuron(None, (BRAIN_DEPTH + 1,0), 0.0, null, "null"),
+    OutputNeuron(None, (BRAIN_DEPTH + 1,5), 0.0, move_hrz, "move_hrz"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,6), 0.0, move_vrt, "move_vrt"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,7), 0.0, move_fwd, "move_fwd"), 
+    OutputNeuron(None, (BRAIN_DEPTH + 1,8), 0.0, rotate, "rotate"),
+]
+'''
     OutputNeuron(None, (BRAIN_DEPTH + 1,1), 0.0, move_n, "move_n"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,2), 0.0, move_s, "move_s"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,3), 0.0, move_e, "move_e"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,4), 0.0, move_w, "move_w"), 
-    OutputNeuron(None, (BRAIN_DEPTH + 1,5), 0.0, move_hrz, "move_hrz"), 
-    OutputNeuron(None, (BRAIN_DEPTH + 1,6), 0.0, move_vrt, "move_vrt"), 
-    OutputNeuron(None, (BRAIN_DEPTH + 1,7), 0.0, move_fwd, "move_fwd"), 
-    OutputNeuron(None, (BRAIN_DEPTH + 1,8), 0.0, rotate, "rotate"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, set_freq, "set_freq"),
-]
-'''
     OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,10), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,11), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,12), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,13), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,14), 0.0, null), 
-    OutputNeuron(None, (BRAIN_DEPTH + 1,15), 0.0, null), '''
-#] # 미리 지정한 OutputNeuron 들의 list
+    OutputNeuron(None, (BRAIN_DEPTH + 1,15), 0.0, null),
+]''' # 미리 지정한 OutputNeuron 들의 list
 
 n_InputN = len(InputNeurons)
 n_OutputN = len(OutputNeurons)
-
 
 def interp_gene(network): 
     # set up the network using the gene
@@ -289,14 +290,14 @@ def interp_gene(network):
     d_op = {}
 
     for n in range(0, BRAIN_SIZE):
-        g = network.gene[6 * n: 6 * n + 6]
+        g = network.gene[5 * n: 5 * n + 5]
         g_t = int(g[0], 16) % (BRAIN_DEPTH + 3)
 
         if g_t > BRAIN_DEPTH + 1:
             continue
         g_so = int(g[1], 16)
         g_si = int(g[2], 16)
-        g_w = MAX_WEIGHT * (float(int(g[3:-1], 16)) - 127.5) / 127.5
+        g_w = MAX_WEIGHT * (float(int(g[3:], 16)) - 127.5) / 127.5
 
         if g_t == 0:
             # input -> hidden[0]
@@ -410,7 +411,7 @@ class Network:
                     sinc.value = sigmoid_np(sinc.value)
         # run output
         for out in self.output_neurons:
-            out.value = sigmoid(out.value)
+            out.value = sigmoid_np(out.value)
             out.act()
         # reset neurons
         for inns in self.inner_neurons:
@@ -474,7 +475,7 @@ def mutateGene(gene):
 def randGene():
     # generate random gene
     new_gene = ''
-    for i in range(6*BRAIN_SIZE):
+    for i in range(5 * BRAIN_SIZE):
         new_gene += format(rand.randint(0, 15), 'x')
     return new_gene
 
@@ -546,14 +547,13 @@ class Entity:
 
 if __name__ == "__main__":
     print(randGene())
-    gene1 = "4a673b062e837c37c6bc5b03c337f3cc62e21d772b370d4e81fbf4f948d5011eb1aef181"
+    gene1 = "e65007c1ad880afa293ff14d3096df5152b38b7b64ba0202d8ea025c30ea"
     '''
     gene1 = ""
     for i in range(8):
         gene1 += f"0" + hex(8+i)[2:]+ "0000"
     '''
     net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
-    # net.run()
     fig = plt.figure(figsize=(4,2), dpi=200)
     ax = fig.add_subplot(1, 1, (1,1))
     net1.makeGraph(ax)

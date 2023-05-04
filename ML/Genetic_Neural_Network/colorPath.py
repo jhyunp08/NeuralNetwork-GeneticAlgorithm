@@ -3,6 +3,7 @@ from colormath.color_objects import LabColor, sRGBColor
 from colormath.color_diff import delta_e_cie1976, delta_e_cie1994, delta_e_cie2000, delta_e_cmc
 from colormath.color_conversions import convert_color
 import numpy
+from utils import timeit
 
 # patch discarded method asscalar of numpy, since color diff is dependent on this
 def patch_asscalar(a):
@@ -40,7 +41,8 @@ def dijkstra(graph, start):
     
     return distances
 
-def minimize_color_difference(colors, type="sRGB", color_difference=delta_e_cie2000):
+@timeit
+def minimize_color_difference(colors, type="sRGB", color_difference=delta_e_cie1994):
     dict_delta_es = {"deltaecie1976": delta_e_cie1976, 
                      "1976": delta_e_cie1976, 
                      "cie1976": delta_e_cie1976, 
@@ -61,11 +63,11 @@ def minimize_color_difference(colors, type="sRGB", color_difference=delta_e_cie2
     colors_cielab = [convert_color(sRGBColor(*color), LabColor) for color in colors]
     graph = build_color_graph(colors_cielab, color_difference)
     start = 0
-    min_k_dist = float('inf')
+    max_r_dist = -float('inf')
     for i, color in enumerate(colors):
-        k_dist = color[0]**2 + color[1]**2 + color[2]**2
-        if k_dist <  min_k_dist:
-            min_k_dist = k_dist
+        r_dist = color[0]**2 - color[1]**2 - color[2]**2
+        if r_dist >  max_r_dist:
+            max_r_dist = r_dist
             start = i
     new_graph = dijkstra(graph, start)
     sorted_graph = sorted(new_graph.items(), key = lambda item: item[1])

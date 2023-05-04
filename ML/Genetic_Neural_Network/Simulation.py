@@ -4,8 +4,11 @@ from classes import *
 import platform
 from tkinter import *
 from tkinter import font as tkFont
-import multiprocess as mp
+import matplotlib.ticker as plticker
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 from utils import timeit
+import cProfile
 from colorPath import minimize_color_difference
 
 
@@ -176,7 +179,7 @@ class SimWindow(Frame):
                 colors = []
                 rand.shuffle(surviving_genes)
                 for i in range(INITIAL_GEN_POP):
-                    if i < 20:
+                    if i < 30:
                         new_genes.append(randGene())
                     else:
                         new_genes.append(mutateGene(surviving_genes[i % len(surviving_genes)]))
