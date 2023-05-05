@@ -154,16 +154,12 @@ def move_w(neuron):
         neuron.master.entity.move_x(-neuron.value * K_VELOCITY)
 
 def move_hrz(neuron):
-    if neuron.value <= -0.25:
-        neuron.master.entity.move_x(-(1.0 - 2*neuron.value) * K_VELOCITY)
-    elif neuron.value >= 0.25:
-        neuron.master.entity.move_x((2*neuron.value - 1.0) * K_VELOCITY)
+    if abs(neuron.value) >= 0.25:
+        neuron.master.entity.move_x(neuron.value * K_VELOCITY)
 
 def move_vrt(neuron):
-    if neuron.value <= -0.25:
-        neuron.master.entity.move_y(-(1.0 - 2*neuron.value) * K_VELOCITY)
-    elif neuron.value >= 0.25:
-        neuron.master.entity.move_y((2*neuron.value - 1.0) * K_VELOCITY)
+    if abs(neuron.value) >= 0.25:
+        neuron.master.entity.move_y(neuron.value * K_VELOCITY)
 
 _move_ne = lambda neuron: (move_n(neuron), move_e(neuron))[0]
 _move_nw = lambda neuron: (move_n(neuron), move_w(neuron))[0]
@@ -192,7 +188,7 @@ def rotate(neuron):
         return
     
 def set_freq(neuron):
-    if neuron.value < 0.2:
+    if neuron.value < 0.4:
         return
     neuron.master.entity.freq *= np.float_power(1.5,  (neuron.value - 0.7)/0.3)
 
@@ -316,6 +312,7 @@ def interp_gene(network):
             else:
                 d_op[g_si] = 1
         elif g_t == BRAIN_DEPTH + 1:
+            '''
             # hidden[0] -> [1]
             g_t = 1
             g_so = g_so % N_PER_LAYER
@@ -332,7 +329,6 @@ def interp_gene(network):
                 d_op[g_si] += 1
             else:
                 d_op[g_si] = 1
-            '''
         else:
             # hidden[i-1] -> hidden[i]
             g_so = g_so % N_PER_LAYER
@@ -368,7 +364,7 @@ def interp_gene(network):
                 h = np.rad2deg(np.arctan(m_sin/m_cos) + PI)
             h = h % 360
             s = max(0.3 + 0.7*(sum(len(l) for l in l_c[1:-2]) / BRAIN_SIZE), 0.4)
-        l = max(0.95 * ((len(d_ip)+len(d_op)) / (n_InputN+n_OutputN) + 1.0)/2.0, 0.57)
+        l = max(0.91 * ((len(d_ip)+len(d_op)) / (n_InputN+n_OutputN) + 1.0)/2.0, 0.57)
     else:
         h = 0
         s = 0
@@ -387,7 +383,7 @@ class Network:
         for l in range(n_layers):
             for i in range(n_inner):
                 self.inner_neurons[l].append(Neuron(self, (l+1, i), 0.0, f"inner{l}_{i}"))
-        self.connections = [[]] * (BRAIN_DEPTH+2)  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
+        self.connections = [[] for i in range(BRAIN_DEPTH+2)]  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
         # connection = (source, sink, weight)
         self.color = ""
         interp_gene(self)
@@ -395,7 +391,8 @@ class Network:
     def run(self):
         # calculate neurons
         for inp in self.input_neurons:
-            inp.get_input()
+            #inp.get_input()
+            inp.value = 0.5
         for l in range(BRAIN_DEPTH+2):
             conns = self.connections[l]
             sincs = set()
@@ -546,14 +543,15 @@ class Entity:
 
 
 if __name__ == "__main__":
-    print(randGene())
-    gene1 = "e65007c1ad880afa293ff14d3096df5152b38b7b64ba0202d8ea025c30ea"
+    gene1 = randGene()
     '''
     gene1 = ""
     for i in range(8):
         gene1 += f"0" + hex(8+i)[2:]+ "0000"
     '''
     net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
+    net1.printGene()
+    net1.run()
     fig = plt.figure(figsize=(4,2), dpi=200)
     ax = fig.add_subplot(1, 1, (1,1))
     net1.makeGraph(ax)

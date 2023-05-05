@@ -179,7 +179,7 @@ class SimWindow(Frame):
                 colors = []
                 rand.shuffle(surviving_genes)
                 for i in range(INITIAL_GEN_POP):
-                    if i < 30:
+                    if i < max(int(INITIAL_GEN_POP/(1.5*self.gen)), 25):
                         new_genes.append(randGene())
                     else:
                         new_genes.append(mutateGene(surviving_genes[i % len(surviving_genes)]))
@@ -189,7 +189,7 @@ class SimWindow(Frame):
                     self.canvas.itemconfig(e.obj, outline=e.network.color)
                     colors.append(e.network.color)
                     
-                sample_colors = rand.sample(colors, 40)
+                sample_colors = rand.sample(colors, 30)
                 for i, color in enumerate(sample_colors):
                     self.after(1, self.master.plot_win.plot_point("gene_1", self.gen, i, color))
             else:
@@ -200,7 +200,7 @@ class SimWindow(Frame):
             colors = []
             for e in entities:
                 colors.append(e.network.color)
-            sample_colors = rand.sample(colors, 40)
+            sample_colors = rand.sample(colors, 30)
             sample_colors = minimize_color_difference(sample_colors, "#hex")
             for i, color in enumerate(sample_colors):
                 self.master.plot_win.plot_point("gene_1", self.gen, i, color)

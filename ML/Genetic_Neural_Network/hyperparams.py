@@ -2,10 +2,10 @@ import numpy as np
 PI = np.pi
 
 N_PER_LAYER = 3  # 은닉층 뉴런 개수
-BRAIN_SIZE = 12  # 최대 connection 개수
+BRAIN_SIZE = 13  # 최대 connection 개수
 BRAIN_DEPTH = 2 # hidden layer 개수 < 16 - 1
-P_MUTATION = 0.04  # 변이 확률
-MAX_WEIGHT = 10.0
+P_MUTATION = 0.05  # 변이 확률
+MAX_WEIGHT = 5.0
 
 K_VELOCITY = 1.2
 
@@ -13,7 +13,7 @@ CANVAS_DIM = 720
 CANVAS_PAD = 30
 SETWIN_WIDTH = 500
 PLOTWIN_HEIGHT = 600
-FRAMES_PER_GEN = 200
+FRAMES_PER_GEN = 220
 INITIAL_GEN_POP = 900
 
 INITIAL_POS = []  # the initial positions at the start of each gen
@@ -31,7 +31,11 @@ DEAD_ZONE = [
 ]
 WALLS = [
       ((200, 520), (170, 180)),
+      ((200, 210), (180, 190)),
+      ((510, 520), (180, 190)),
       ((200, 520), (540, 550)),
+      ((200, 210), (530, 540)),
+      ((510, 520), (530, 540))
 ]
 
 frame_delay_ms = 25
