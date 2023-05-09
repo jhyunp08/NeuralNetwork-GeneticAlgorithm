@@ -543,7 +543,7 @@ class Entity:
 
 
 if __name__ == "__main__":
-    gene1 = randGene()
+    gene1 = "9cac031196eebc55150d1f4f93cc0aa5b2350fe2d583fddb24d9de618638de5e1da3898491f"
     '''
     gene1 = ""
     for i in range(8):
@@ -551,7 +551,6 @@ if __name__ == "__main__":
     '''
     net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
     net1.printGene()
-    net1.run()
     fig = plt.figure(figsize=(4,2), dpi=200)
     ax = fig.add_subplot(1, 1, (1,1))
     net1.makeGraph(ax)
