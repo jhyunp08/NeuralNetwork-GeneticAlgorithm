@@ -140,7 +140,7 @@ class SimWindow(Frame):
             e.x, e.y = INITIAL_POS[i]
         self.update_()
 
-    # @timeit
+    @timeit
     def run(self):
         for e in entities:
             e.run()
@@ -168,18 +168,23 @@ class SimWindow(Frame):
             new_genes = []
             for e in entities:
                 if e.inRectangles(GOAL_ZONE):
-                    surviving_genes.append(e.network.gene)
+                    surviving_genes.append((e.network.gene, e.network.complexity()))
                 e.reset()
             for e in entities_dead:
                 entities.append(e)
             entities_dead.clear()
+
             self.survived.append(surviving_genes)
             self.master.plot_win.plot_point("surv_rate", self.gen-1, len(surviving_genes), 'b')
+
+            surviving_genes.sort(key=lambda tup: tup[1], reverse=True)
+            surviving_genes = [tup[0] for tup in surviving_genes[0:int(INITIAL_GEN_POP * int(self.gen**0.5)/90)]]
+
             if surviving_genes:
                 colors = []
                 rand.shuffle(surviving_genes)
                 for i in range(INITIAL_GEN_POP):
-                    if i < max(int(INITIAL_GEN_POP/(1.5*self.gen)), 25):
+                    if i < max(int(INITIAL_GEN_POP/(1.5*(self.gen**0.75))), 25):
                         new_genes.append(randGene())
                     else:
                         new_genes.append(mutateGene(surviving_genes[i % len(surviving_genes)]))
@@ -188,10 +193,6 @@ class SimWindow(Frame):
                     e.network = Network(e, N_PER_LAYER, BRAIN_DEPTH, new_genes[i])
                     self.canvas.itemconfig(e.obj, outline=e.network.color)
                     colors.append(e.network.color)
-                    
-                sample_colors = rand.sample(colors, 30)
-                for i, color in enumerate(sample_colors):
-                    self.after(1, self.master.plot_win.plot_point("gene_1", self.gen, i, color))
             else:
                 self.pause_simulation()
                 print("Simulation Terminated: No Entities Alive")
@@ -200,10 +201,11 @@ class SimWindow(Frame):
             colors = []
             for e in entities:
                 colors.append(e.network.color)
-            sample_colors = rand.sample(colors, 30)
-            sample_colors = minimize_color_difference(sample_colors, "#hex")
-            for i, color in enumerate(sample_colors):
-                self.master.plot_win.plot_point("gene_1", self.gen, i, color)
+
+        sample_colors = rand.sample(colors, 40)
+        sample_colors = minimize_color_difference(sample_colors, "#hex")
+        for i, color in enumerate(sample_colors):
+            self.master.plot_win.plot_point("gene_1", self.gen, i, color)    
 
         self.place_entities()
         self.loop_frames()

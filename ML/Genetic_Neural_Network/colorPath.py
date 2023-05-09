@@ -41,7 +41,6 @@ def dijkstra(graph, start):
     
     return distances
 
-@timeit
 def minimize_color_difference(colors, type="sRGB", color_difference=delta_e_cie1994):
     dict_delta_es = {"deltaecie1976": delta_e_cie1976, 
                      "1976": delta_e_cie1976, 

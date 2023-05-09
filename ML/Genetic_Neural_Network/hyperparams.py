@@ -13,7 +13,7 @@ CANVAS_DIM = 720
 CANVAS_PAD = 30
 SETWIN_WIDTH = 500
 PLOTWIN_HEIGHT = 600
-FRAMES_PER_GEN = 220
+FRAMES_PER_GEN = 270
 INITIAL_GEN_POP = 900
 
 INITIAL_POS = []  # the initial positions at the start of each gen

@@ -6,7 +6,7 @@ from networkx.drawing.nx_agraph import graphviz_layout
 import matplotlib.pyplot as plt  # visualizing graphs
 import PIL  # image processing
 from hyperparams import *
-from utils import HSL2RGB, timeit
+from utils import HSL2RGB, timeit, dict_countup
 import cProfile
 
 
@@ -260,6 +260,7 @@ OutputNeurons = [
     OutputNeuron(None, (BRAIN_DEPTH + 1,6), 0.0, move_vrt, "move_vrt"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,7), 0.0, move_fwd, "move_fwd"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,8), 0.0, rotate, "rotate"),
+    OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, move_fwd, "move_fwd"), #
 ]
 '''
     OutputNeuron(None, (BRAIN_DEPTH + 1,1), 0.0, move_n, "move_n"), 
@@ -267,7 +268,6 @@ OutputNeurons = [
     OutputNeuron(None, (BRAIN_DEPTH + 1,3), 0.0, move_e, "move_e"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,4), 0.0, move_w, "move_w"), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, set_freq, "set_freq"),
-    OutputNeuron(None, (BRAIN_DEPTH + 1,9), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,10), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,11), 0.0, null), 
     OutputNeuron(None, (BRAIN_DEPTH + 1,12), 0.0, null), 
@@ -299,18 +299,12 @@ def interp_gene(network):
             # input -> hidden[0]
             g_so = g_so % n_InputN
             g_si = g_si % N_PER_LAYER
-            if g_so in d_ip:
-                d_ip[g_so] += 1
-            else:
-                d_ip[g_so] = 1
+            dict_countup(d_ip, g_so)
         elif g_t == BRAIN_DEPTH:
             # hidden[-1] -> output
             g_so = g_so % N_PER_LAYER
             g_si = g_si % n_OutputN
-            if g_si in d_op:
-                d_op[g_si] += 1
-            else:
-                d_op[g_si] = 1
+            dict_countup(d_op, g_si)
         elif g_t == BRAIN_DEPTH + 1:
             '''
             # hidden[0] -> [1]
@@ -321,14 +315,8 @@ def interp_gene(network):
             # input -> output
             g_so = g_so % n_InputN
             g_si = g_si % n_OutputN
-            if g_so in d_ip:
-                d_ip[g_so] += 1
-            else:
-                d_ip[g_so] = 1
-            if g_si in d_op:
-                d_op[g_si] += 1
-            else:
-                d_op[g_si] = 1
+            dict_countup(d_ip, g_so)
+            dict_countup(d_op, g_si)
         else:
             # hidden[i-1] -> hidden[i]
             g_so = g_so % N_PER_LAYER
@@ -383,7 +371,7 @@ class Network:
         for l in range(n_layers):
             for i in range(n_inner):
                 self.inner_neurons[l].append(Neuron(self, (l+1, i), 0.0, f"inner{l}_{i}"))
-        self.connections = [[] for i in range(BRAIN_DEPTH+2)]  # connections[0]: input->output, connections[else]: inner->inner, connections[-1]: inner->output
+        self.connections = [[] for i in range(BRAIN_DEPTH+2)]  # connections[0]: input->inner, connections[else]: inner->inner, connections[-2]: inner->output, connections[-1]: input->output
         # connection = (source, sink, weight)
         self.color = ""
         interp_gene(self)
@@ -457,6 +445,21 @@ class Network:
 
     def printGene(self):
         print(self.gene)
+
+    def complexity(self):
+        comp = 0
+        dict_din = {}
+        dict_dout = {}
+        for conns in self.connections[0:-1]:
+            for conn in conns:
+                dict_countup(dict_dout, conn[0])
+                dict_countup(dict_din, conn[1])
+
+        for layer in self.inner_neurons:
+            for inn in layer:
+                if (inn in dict_din) and (inn in dict_dout):
+                    comp += dict_din[inn] * dict_dout[inn]
+        return comp
 
 
 def mutateGene(gene):
@@ -549,7 +552,8 @@ if __name__ == "__main__":
     for i in range(8):
         gene1 += f"0" + hex(8+i)[2:]+ "0000"
     '''
-    net1 = Network(None, N_PER_LAYER, BRAIN_DEPTH, gene1)
+    e = Entity(0, 0)
+    net1 = Network(e, N_PER_LAYER, BRAIN_DEPTH, gene1)
     net1.printGene()
     fig = plt.figure(figsize=(4,2), dpi=200)
     ax = fig.add_subplot(1, 1, (1,1))
@@ -561,6 +565,10 @@ if __name__ == "__main__":
     fig.canvas.draw()
     plt.show()
     
+    l = []
+    l.append(e.network)
+    e.reset()
+    print(l)
     print('done')
     print(net1.color)
     # 테스트할 거 있으면

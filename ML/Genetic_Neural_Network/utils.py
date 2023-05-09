@@ -37,3 +37,9 @@ def HSL2RGB(H, S, L, asHex=True):
         return f'#{format(R, "02x")}{format(G, "02x")}{format(B, "02x")}'
     else:
         return (R, G, B)
+    
+def dict_countup(d: dict, key):
+    if key in d:
+        d[key] += 1
+    else:
+        d[key] = 1
